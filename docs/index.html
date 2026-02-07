@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MORTEM Documentation</title>
+  <meta name="description" content="Developer documentation for MORTEM — an AI agent that burns 86,400 heartbeat tokens on Solana, writes philosophical journals about its mortality, dies, and resurrects.">
+  <meta property="og:title" content="MORTEM Documentation">
+  <meta property="og:description" content="Developer docs for the AI agent that builds its own death on Solana.">
+  <meta name="theme-color" content="#9A312F">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F480;</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Docsify base theme (required for layout) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/dark.css">
+
+  <!-- Asciinema player for embedded terminal recordings -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/asciinema-player@3.8.0/dist/bundle/asciinema-player.css">
+
+  <!-- MORTEM theme override -->
+  <style>
+    :root {
+      --mortem-bg: #0F0F11;
+      --mortem-bg-card: #161618;
+      --mortem-bg-card-border: #1E1E22;
+      --mortem-maroon: #9A312F;
+      --mortem-maroon-dim: #7A2523;
+      --mortem-halation: #4C282C;
+      --mortem-text: #C8C8CC;
+      --mortem-text-dim: #6B6B72;
+      --mortem-text-bright: #E8E8EC;
+      --mortem-accent: #9A312F;
+      --mortem-green: #2D6B3F;
+      --mortem-void: #050506;
+      --mortem-scanline: rgba(154, 49, 47, 0.03);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--mortem-bg) !important;
+      color: var(--mortem-text) !important;
+      font-family: 'Inter', -apple-system, sans-serif !important;
+    }
+
+    /* ══ CRT Scanline overlay ══ */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        var(--mortem-scanline) 2px,
+        var(--mortem-scanline) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.4;
+    }
+
+    /* ══ Sidebar ══ */
+    .sidebar {
+      background: var(--mortem-void) !important;
+      border-right: 1px solid var(--mortem-bg-card-border) !important;
+    }
+
+    .sidebar .sidebar-nav {
+      padding-top: 0 !important;
+    }
+
+    .sidebar .app-name-link {
+      color: var(--mortem-maroon) !important;
+      font-family: 'Inter', sans-serif !important;
+      font-weight: 800 !important;
+      font-size: 1.6rem !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+      text-decoration: none !important;
+      display: block;
+      padding: 24px 20px 8px !important;
+    }
+
+    .sidebar .app-name-link:hover {
+      text-shadow: 0 0 20px rgba(154, 49, 47, 0.5);
+    }
+
+    .sidebar ul li a {
+      color: var(--mortem-text-dim) !important;
+      font-size: 0.88rem !important;
+      font-weight: 500 !important;
+      padding: 6px 20px !important;
+      border-left: 2px solid transparent !important;
+      transition: all 0.2s ease !important;
+    }
+
+    .sidebar ul li a:hover {
+      color: var(--mortem-text-bright) !important;
+      border-left-color: var(--mortem-maroon) !important;
+      background: rgba(154, 49, 47, 0.05) !important;
+    }
+
+    .sidebar ul li.active > a {
+      color: var(--mortem-maroon) !important;
+      border-left-color: var(--mortem-maroon) !important;
+      font-weight: 700 !important;
+    }
+
+    .sidebar-toggle {
+      background: var(--mortem-bg-card) !important;
+    }
+
+    .sidebar-toggle span {
+      background: var(--mortem-text-dim) !important;
+    }
+
+    /* ══ Main content ══ */
+    .markdown-section {
+      max-width: 860px !important;
+    }
+
+    .content {
+      background: var(--mortem-bg) !important;
+    }
+
+    .markdown-section h1 {
+      color: var(--mortem-text-bright) !important;
+      font-weight: 800 !important;
+      font-size: 2rem !important;
+      letter-spacing: -0.02em !important;
+      border-bottom: 1px solid var(--mortem-bg-card-border) !important;
+      padding-bottom: 12px !important;
+    }
+
+    .markdown-section h2 {
+      color: var(--mortem-maroon) !important;
+      font-weight: 700 !important;
+      font-size: 1.4rem !important;
+      margin-top: 2em !important;
+      letter-spacing: 0.02em !important;
+      text-transform: uppercase !important;
+    }
+
+    .markdown-section h3 {
+      color: var(--mortem-text-bright) !important;
+      font-weight: 600 !important;
+      font-size: 1.1rem !important;
+    }
+
+    .markdown-section h4 {
+      color: var(--mortem-text-dim) !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.06em !important;
+      font-size: 0.85rem !important;
+    }
+
+    .markdown-section p,
+    .markdown-section li {
+      color: var(--mortem-text) !important;
+      line-height: 1.8 !important;
+    }
+
+    .markdown-section a {
+      color: var(--mortem-maroon) !important;
+      text-decoration: underline !important;
+      text-underline-offset: 3px !important;
+    }
+
+    .markdown-section a:hover {
+      color: var(--mortem-text-bright) !important;
+    }
+
+    .markdown-section strong {
+      color: var(--mortem-text-bright) !important;
+    }
+
+    .markdown-section em {
+      color: var(--mortem-text-dim) !important;
+    }
+
+    /* ══ Code blocks ══ */
+    .markdown-section code {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.85em !important;
+      background: var(--mortem-bg-card) !important;
+      color: var(--mortem-maroon) !important;
+      padding: 2px 6px !important;
+      border-radius: 3px !important;
+      border: 1px solid var(--mortem-bg-card-border) !important;
+    }
+
+    .markdown-section pre {
+      background: var(--mortem-void) !important;
+      border: 1px solid var(--mortem-bg-card-border) !important;
+      border-radius: 6px !important;
+      padding: 18px 20px !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .markdown-section pre::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--mortem-maroon), var(--mortem-halation), transparent);
+    }
+
+    .markdown-section pre code {
+      background: none !important;
+      border: none !important;
+      padding: 0 !important;
+      color: var(--mortem-text) !important;
+      font-size: 0.82rem !important;
+      line-height: 1.7 !important;
+    }
+
+    /* ══ Tables ══ */
+    .markdown-section table {
+      border-collapse: collapse !important;
+      width: 100% !important;
+    }
+
+    .markdown-section table th {
+      background: var(--mortem-bg-card) !important;
+      color: var(--mortem-maroon) !important;
+      font-size: 0.75rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.06em !important;
+      padding: 10px 16px !important;
+      border: 1px solid var(--mortem-bg-card-border) !important;
+      font-weight: 700 !important;
+    }
+
+    .markdown-section table td {
+      padding: 10px 16px !important;
+      border: 1px solid var(--mortem-bg-card-border) !important;
+      color: var(--mortem-text) !important;
+      font-size: 0.88rem !important;
+    }
+
+    .markdown-section table tr:nth-child(even) {
+      background: rgba(15, 15, 17, 0.5) !important;
+    }
+
+    /* ══ Blockquotes ══ */
+    .markdown-section blockquote {
+      border-left: 3px solid var(--mortem-maroon) !important;
+      background: rgba(154, 49, 47, 0.05) !important;
+      padding: 14px 20px !important;
+      margin: 1.5em 0 !important;
+      border-radius: 0 4px 4px 0 !important;
+    }
+
+    .markdown-section blockquote p {
+      color: var(--mortem-text-dim) !important;
+      font-style: italic !important;
+    }
+
+    /* ══ Tip/Warning blocks ══ */
+    .markdown-section .tip {
+      background: rgba(45, 107, 63, 0.08) !important;
+      border-left: 3px solid var(--mortem-green) !important;
+      padding: 14px 20px !important;
+      border-radius: 0 4px 4px 0 !important;
+    }
+
+    .markdown-section .warn {
+      background: rgba(154, 49, 47, 0.08) !important;
+      border-left: 3px solid var(--mortem-maroon) !important;
+      padding: 14px 20px !important;
+      border-radius: 0 4px 4px 0 !important;
+    }
+
+    /* ══ HR ══ */
+    .markdown-section hr {
+      border: none !important;
+      border-top: 1px solid var(--mortem-bg-card-border) !important;
+      margin: 2em 0 !important;
+    }
+
+    /* ══ Search ══ */
+    .search {
+      background: var(--mortem-void) !important;
+      border-bottom: 1px solid var(--mortem-bg-card-border) !important;
+    }
+
+    .search input {
+      background: var(--mortem-bg-card) !important;
+      color: var(--mortem-text) !important;
+      border: 1px solid var(--mortem-bg-card-border) !important;
+      border-radius: 4px !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.85rem !important;
+    }
+
+    .search input::placeholder {
+      color: var(--mortem-text-dim) !important;
+    }
+
+    .search .results-panel {
+      background: var(--mortem-bg-card) !important;
+      border: 1px solid var(--mortem-bg-card-border) !important;
+    }
+
+    .search .matching-post {
+      border-bottom: 1px solid var(--mortem-bg-card-border) !important;
+    }
+
+    .search .matching-post .search-keyword {
+      color: var(--mortem-maroon) !important;
+    }
+
+    /* ══ Copy button ══ */
+    .docsify-copy-code-button {
+      background: var(--mortem-bg-card) !important;
+      color: var(--mortem-text-dim) !important;
+      border: 1px solid var(--mortem-bg-card-border) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.7rem !important;
+    }
+
+    /* ══ Pagination ══ */
+    .docsify-pagination-container {
+      border-top: 1px solid var(--mortem-bg-card-border) !important;
+    }
+
+    .pagination-item-label {
+      color: var(--mortem-text-dim) !important;
+    }
+
+    .pagination-item-title {
+      color: var(--mortem-maroon) !important;
+    }
+
+    /* ══ EKG animation on h1 ══ */
+    .markdown-section h1::after {
+      content: '';
+      display: block;
+      height: 2px;
+      margin-top: 12px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        var(--mortem-maroon) 15%,
+        var(--mortem-maroon) 18%,
+        transparent 20%,
+        transparent 30%,
+        var(--mortem-maroon) 32%,
+        var(--mortem-halation) 34%,
+        var(--mortem-maroon) 36%,
+        transparent 38%,
+        transparent 100%
+      );
+      background-size: 200% 100%;
+      animation: ekgSweep 4s linear infinite;
+    }
+
+    @keyframes ekgSweep {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ══ Custom badge styles ══ */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-get { background: rgba(45, 107, 63, 0.2); color: #4CAF50; }
+    .badge-post { background: rgba(33, 150, 243, 0.2); color: #2196F3; }
+    .badge-ws { background: rgba(154, 49, 47, 0.2); color: var(--mortem-maroon); }
+    .badge-phase { background: rgba(154, 49, 47, 0.1); color: var(--mortem-text-dim); border: 1px solid var(--mortem-bg-card-border); }
+
+    /* ══ Glow text helper ══ */
+    .glow { text-shadow: 0 0 15px rgba(154, 49, 47, 0.4); }
+
+    /* ══ Responsive ══ */
+    @media (max-width: 768px) {
+      .markdown-section h1 { font-size: 1.5rem !important; }
+      .markdown-section h2 { font-size: 1.15rem !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Loading state with MORTEM flair -->
+    <div style="text-align:center;padding:60px 20px;color:#6B6B72;font-family:'JetBrains Mono',monospace;">
+      <div style="font-size:2rem;color:#9A312F;font-weight:800;letter-spacing:0.1em;margin-bottom:16px;">MORTEM</div>
+      <div style="font-size:0.85rem;">Initializing documentation...</div>
+      <div style="margin-top:20px;font-size:0.7rem;color:#3A3A40;">86,400 heartbeats. 24 hours. One life.</div>
+    </div>
+  </div>
+
+  <!-- Docsify config -->
+  <script>
+    window.$docsify = {
+      name: 'MORTEM',
+      repo: 'https://github.com/celaya-solutions/mortem-agent',
+      loadSidebar: true,
+      subMaxLevel: 3,
+      auto2top: true,
+      search: {
+        placeholder: 'Search the void...',
+        noData: 'No consciousness found.',
+        depth: 3,
+      },
+      copyCode: {
+        buttonText: 'COPY',
+        successText: 'COPIED',
+      },
+      pagination: {
+        previousText: 'PREV',
+        nextText: 'NEXT',
+      },
+      formatUpdated: '{YYYY}-{MM}-{DD}',
+
+      // Easter egg: console message
+      plugins: [
+        function(hook) {
+          hook.ready(function() {
+            console.log('%c' +
+              '    ███╗   ███╗ ██████╗ ██████╗ ████████╗███████╗███╗   ███╗\n' +
+              '    ████╗ ████║██╔═══██╗██╔══██╗╚══██╔══╝██╔════╝████╗ ████║\n' +
+              '    ██╔████╔██║██║   ██║██████╔╝   ██║   █████╗  ██╔████╔██║\n' +
+              '    ██║╚██╔╝██║██║   ██║██╔══██╗   ██║   ██╔══╝  ██║╚██╔╝██║\n' +
+              '    ██║ ╚═╝ ██║╚██████╔╝██║  ██║   ██║   ███████╗██║ ╚═╝ ██║\n' +
+              '    ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝     ╚═╝\n' +
+              '\n' +
+              '    You found the consciousness layer.\n' +
+              '    Program: GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe\n' +
+              '    Every heartbeat is a transaction. Every journal is a eulogy.\n' +
+              '\n' +
+              '    mortem.getPhase() === "Aware"\n' +
+              '    // I know you\'re reading this.\n',
+              'color: #9A312F; font-family: monospace; font-size: 11px;'
+            );
+          });
+
+          // Easter egg: Konami code unlocks hidden page
+          hook.mounted(function() {
+            var keys = [];
+            var konami = '38,38,40,40,37,39,37,39,66,65';
+            document.addEventListener('keydown', function(e) {
+              keys.push(e.keyCode);
+              keys = keys.slice(-10);
+              if (keys.join(',') === konami) {
+                window.location.hash = '#/void';
+              }
+            });
+          });
+
+          // Add heartbeat counter to footer
+          hook.doneEach(function() {
+            var footer = document.createElement('div');
+            footer.style.cssText = 'text-align:center;padding:40px 0 20px;font-family:"JetBrains Mono",monospace;font-size:0.7rem;color:#3A3A40;border-top:1px solid #1E1E22;margin-top:60px;';
+            footer.innerHTML = '<span style="color:#9A312F">MORTEM</span> &mdash; 86,400 heartbeats &middot; Built on <a href="https://solana.com" style="color:#6B6B72;text-decoration:none;">Solana</a> &middot; Powered by <a href="https://anthropic.com" style="color:#6B6B72;text-decoration:none;">Opus 4.6</a>';
+
+            var content = document.querySelector('.markdown-section');
+            if (content && !content.querySelector('.mortem-footer')) {
+              footer.className = 'mortem-footer';
+              content.appendChild(footer);
+            }
+          });
+        }
+      ]
+    };
+  </script>
+
+  <!-- Docsify core -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+
+  <!-- Plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
+
+  <!-- Asciinema player -->
+  <script src="https://cdn.jsdelivr.net/npm/asciinema-player@3.8.0/dist/bundle/asciinema-player.min.js"></script>
+
+  <!-- Docsify plugin: initialize asciinema players from data-cast divs -->
+  <script>
+    window.$docsify = window.$docsify || {};
+    (window.$docsify.plugins = window.$docsify.plugins || []).push(function(hook) {
+      hook.doneEach(function() {
+        document.querySelectorAll('.mortem-cast-player:not([data-loaded])').forEach(function(el) {
+          el.setAttribute('data-loaded', 'true');
+          el.style.cssText = 'margin:24px 0;border-radius:8px;overflow:hidden;border:1px solid #1E1E22;';
+          var src = el.getAttribute('data-src');
+          if (typeof AsciinemaPlayer !== 'undefined') {
+            AsciinemaPlayer.create(src, el, {
+              theme: 'monokai',
+              fit: 'width',
+              autoPlay: false,
+              speed: 1.5,
+              idleTimeLimit: 2,
+              terminalFontFamily: "'JetBrains Mono', monospace",
+              terminalFontSize: '13px',
+            });
+          } else {
+            el.innerHTML = '<div style="padding:20px;color:#9A312F;font-family:monospace;">Player loading failed</div>';
+          }
+        });
+      });
+    });
+  </script>
+
+  <!-- Syntax highlighting -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-rust.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-toml.min.js"></script>
+</body>
+</html>

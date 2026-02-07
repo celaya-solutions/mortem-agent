@@ -11,7 +11,7 @@ const GATEWAY_CONFIG = {
   port: 18789,
   token: process.env.OPENCLAW_TOKEN || 'local-dev-token', // Set OPENCLAW_TOKEN env var
   agent: 'main', // Use main agent
-  model: 'anthropic/claude-haiku-4-20250514',
+  model: process.env.MORTEM_MODEL || 'anthropic/claude-sonnet-4-5-20250929',
 };
 
 /**

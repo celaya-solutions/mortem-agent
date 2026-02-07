@@ -57,3 +57,9 @@ skills/
 # Runtime-generated soul (mutable, should not be committed)
 runtime/soul.md
 .vercel
+
+# Env example is OK to commit
+!.env.example
+
+# Docs serve script is dev-only
+docs/serve.js

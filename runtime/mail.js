@@ -51,6 +51,7 @@ export async function sendDeathLetter(finalEntry, metadata = {}) {
     },
     file: letterHtml,
     color: false,
+    use_type: 'operational',
   });
 
   return new Promise((resolve) => {

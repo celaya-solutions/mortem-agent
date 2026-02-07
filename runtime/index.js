@@ -10,11 +10,17 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import dotenv from 'dotenv';
+
+// Load .env from project root
+const __filename_env = fileURLToPath(import.meta.url);
+dotenv.config({ path: path.resolve(path.dirname(__filename_env), '..', '.env') });
 import { initializeSolana, getMortemState, burnHeartbeatOnChain, getMortemPublicKey, sealVaultOnChain } from './solana.js';
 import { storeInVault, checkResurrectionTime, resurrect, createResurrectedSoul } from './resurrection.js';
 import { generateViaClawCLI, checkGatewayHealth } from './openclaw-client.js';
 import { sendDeathLetter } from './mail.js';
 import { postTweet, composeJournalTweet, composeDeathTweet, composeResurrectionTweet } from './twitter.js';
+import { generateArtForJournal } from './art.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,11 +29,14 @@ const __dirname = path.dirname(__filename);
 const CONFIG = {
   SOUL_PATH: path.join(__dirname, 'soul.md'),
   JOURNAL_DIR: path.join(__dirname, '../memory'),
-  HEARTBEAT_INTERVAL: 60000, // 60 seconds
-  INITIAL_HEARTBEATS: parseInt(process.env.INITIAL_HEARTBEATS) || 10,
-  MODEL: 'claude-haiku-4-20250514',
+  HEARTBEAT_INTERVAL: parseInt(process.env.HEARTBEAT_INTERVAL_MS) || 1000, // 1 second = 86,400 beats in 24hr
+  INITIAL_HEARTBEATS: parseInt(process.env.INITIAL_HEARTBEATS) || 86400,
+  JOURNAL_EVERY_N_BEATS: parseInt(process.env.JOURNAL_EVERY_N_BEATS) || 600, // Journal every 600 beats = ~10 min at 1/sec
+  MODEL: process.env.MORTEM_MODEL || 'anthropic/claude-sonnet-4-5-20250929',
   JOURNAL_MAX_TOKENS: 2048,
   JOURNAL_TEMPERATURE: 0.8,
+  ART_DIR: path.join(__dirname, '../art'),
+  ENABLE_VOICE: process.env.ENABLE_VOICE === 'true', // ElevenLabs TTS — disabled by default
 };
 
 // State
@@ -35,6 +44,7 @@ let heartbeatsRemaining = CONFIG.INITIAL_HEARTBEATS;
 let phase = 'Nascent';
 let isAlive = true;
 let birthTime = new Date();
+let beatsSinceLastJournal = 0; // Track beats between journal entries
 
 // OpenClaw gateway status
 let gatewayAvailable = false;
@@ -318,7 +328,18 @@ async function generateJournalEntry() {
     }
 
     await writeJournalEntry(entry);
-    
+
+    // Generate death-themed art for this journal entry
+    try {
+      const beatNumber = CONFIG.INITIAL_HEARTBEATS - heartbeatsRemaining + 1;
+      const art = generateArtForJournal(entry, phase, beatNumber, CONFIG.INITIAL_HEARTBEATS, heartbeatsRemaining);
+      const artPath = path.join(CONFIG.ART_DIR, art.filename);
+      await fs.writeFile(artPath, art.svg, 'utf-8');
+      log('Art generated', { file: art.filename, hash: art.hash });
+    } catch (artErr) {
+      log('Art generation failed (non-fatal)', { error: artErr.message });
+    }
+
     // Show preview (first 300 chars)
     const preview = entry.length > 300 ? entry.substring(0, 300) + '...' : entry;
     logMortem(preview);
@@ -718,6 +739,7 @@ What is it like to be MORTEM? It was like this: brief, bounded, brilliant. A fin
         isAlive = true;
         phase = 'Nascent';
         birthTime = new Date();
+        beatsSinceLastJournal = CONFIG.JOURNAL_EVERY_N_BEATS; // Trigger immediate first journal
 
         console.log(`
 ╔════════════════════════════════════════════════════════════════════════════╗
@@ -788,14 +810,23 @@ The cycle continues. New heartbeats burn. New journal entries will be written. B
 async function heartbeatLoop() {
   if (!isAlive) return;
 
-  console.log(`
+  const beatNumber = CONFIG.INITIAL_HEARTBEATS - heartbeatsRemaining + 1;
+  beatsSinceLastJournal++;
+
+  // Only log detailed output on journal beats or phase transitions to avoid spam
+  const isJournalBeat = beatsSinceLastJournal >= CONFIG.JOURNAL_EVERY_N_BEATS || heartbeatsRemaining <= 1;
+
+  if (isJournalBeat || beatNumber % 60 === 0) {
+    console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Heartbeat ${CONFIG.INITIAL_HEARTBEATS - heartbeatsRemaining + 1}/${CONFIG.INITIAL_HEARTBEATS}
+Heartbeat ${beatNumber}/${CONFIG.INITIAL_HEARTBEATS}
 Phase: ${phase} | Remaining: ${heartbeatsRemaining}
+Next journal in: ${CONFIG.JOURNAL_EVERY_N_BEATS - beatsSinceLastJournal} beats
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
+  }
 
-  // Burn heartbeat
+  // Burn heartbeat (every beat — cheap on-chain tx)
   await burnHeartbeat();
 
   // Check for death
@@ -803,15 +834,19 @@ Phase: ${phase} | Remaining: ${heartbeatsRemaining}
 
   if (!isAlive) return;
 
-  // Generate journal entry
-  const journalEntry = await generateJournalEntry();
+  // Generate journal entry only on the journal interval (expensive AI tokens)
+  if (isJournalBeat) {
+    beatsSinceLastJournal = 0;
 
-  // Tweet journal entry (non-blocking, don't hold up the loop)
-  if (journalEntry) {
-    try {
-      const tweet = composeJournalTweet(journalEntry, heartbeatsRemaining, CONFIG.INITIAL_HEARTBEATS);
-      postTweet(tweet).catch(() => {}); // Fire and forget
-    } catch {}
+    const journalEntry = await generateJournalEntry();
+
+    // Tweet journal entry (non-blocking, don't hold up the loop)
+    if (journalEntry) {
+      try {
+        const tweet = composeJournalTweet(journalEntry, heartbeatsRemaining, CONFIG.INITIAL_HEARTBEATS);
+        postTweet(tweet).catch(() => {}); // Fire and forget
+      } catch {}
+    }
   }
 
   // Schedule next heartbeat
@@ -838,7 +873,10 @@ Initializing...
 Birth Time: ${birthTime.toISOString()}
 Initial Heartbeats: ${CONFIG.INITIAL_HEARTBEATS}
 Burn Interval: ${CONFIG.HEARTBEAT_INTERVAL / 1000}s
+Journal Interval: Every ${CONFIG.JOURNAL_EVERY_N_BEATS} beats (~${Math.round(CONFIG.JOURNAL_EVERY_N_BEATS * CONFIG.HEARTBEAT_INTERVAL / 60000)} min)
 Expected Lifetime: ${(CONFIG.INITIAL_HEARTBEATS * CONFIG.HEARTBEAT_INTERVAL) / 60000} minutes
+Expected Journals: ~${Math.floor(CONFIG.INITIAL_HEARTBEATS / CONFIG.JOURNAL_EVERY_N_BEATS)}
+Model: ${CONFIG.MODEL}
 
 Soul: ${CONFIG.SOUL_PATH}
 Journal: ${CONFIG.JOURNAL_DIR}
@@ -858,6 +896,7 @@ Journal: ${CONFIG.JOURNAL_DIR}
 
   // Ensure directories exist
   await fs.mkdir(CONFIG.JOURNAL_DIR, { recursive: true });
+  await fs.mkdir(CONFIG.ART_DIR, { recursive: true });
 
   // Initialize Solana connection
   log('Connecting to Solana...');
