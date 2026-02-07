@@ -56,3 +56,4 @@ skills/
 
 # Runtime-generated soul (mutable, should not be committed)
 runtime/soul.md
+.vercel
