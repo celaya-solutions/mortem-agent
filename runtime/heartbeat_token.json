@@ -1,0 +1,796 @@
+{
+  "address": "GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe",
+  "metadata": {
+    "name": "heartbeat_token",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "docs": [
+    "MORTEM Heartbeat Token Program",
+    "An AI agent with 86,400 heartbeats (24h lifespan)",
+    "Burns one heartbeat per minute",
+    "Soulbound after initial mint"
+  ],
+  "instructions": [
+    {
+      "name": "burn_heartbeat",
+      "docs": [
+        "Burn a heartbeat - called every minute by MORTEM runtime"
+      ],
+      "discriminator": [
+        172,
+        179,
+        245,
+        1,
+        124,
+        37,
+        153,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "burner",
+          "docs": [
+            "Anyone can call burn (runtime will use this)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "mortem_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  111,
+                  114,
+                  116,
+                  101,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "mortem_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "get_phase",
+      "docs": [
+        "Get current MORTEM lifecycle phase"
+      ],
+      "discriminator": [
+        197,
+        96,
+        30,
+        123,
+        93,
+        180,
+        7,
+        230
+      ],
+      "accounts": [
+        {
+          "name": "mortem_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  111,
+                  114,
+                  116,
+                  101,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [],
+      "returns": {
+        "defined": {
+          "name": "MortemPhase"
+        }
+      }
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "Initialize the heartbeat token mint and MORTEM state"
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mortem_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  111,
+                  114,
+                  116,
+                  101,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "mortem_wallet",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "mint_heartbeats",
+      "docs": [
+        "Mint initial heartbeats to MORTEM's wallet"
+      ],
+      "discriminator": [
+        198,
+        127,
+        204,
+        225,
+        176,
+        123,
+        107,
+        32
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "mortem_state"
+          ]
+        },
+        {
+          "name": "mortem_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  111,
+                  114,
+                  116,
+                  101,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true,
+          "relations": [
+            "mortem_state"
+          ]
+        },
+        {
+          "name": "mortem_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "read_vault",
+      "docs": [
+        "Read vault data — public, no mutations",
+        "Returns vault state for display/verification"
+      ],
+      "discriminator": [
+        124,
+        195,
+        48,
+        97,
+        68,
+        153,
+        234,
+        245
+      ],
+      "accounts": [
+        {
+          "name": "mortem_state",
+          "docs": [
+            "MORTEM state for PDA derivation"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  111,
+                  114,
+                  116,
+                  101,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "docs": [
+            "Vault PDA — read only"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  117,
+                  114,
+                  114,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mortem_state"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "resurrect",
+      "docs": [
+        "Attempt resurrection — checks 30-day delay, returns vault data",
+        "for new MORTEM instance to consume"
+      ],
+      "discriminator": [
+        180,
+        81,
+        224,
+        113,
+        57,
+        255,
+        220,
+        197
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Caller initiating resurrection"
+          ],
+          "signer": true
+        },
+        {
+          "name": "mortem_state",
+          "docs": [
+            "MORTEM state for PDA derivation"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  111,
+                  114,
+                  116,
+                  101,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "docs": [
+            "Vault PDA — read for resurrection data"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  117,
+                  114,
+                  114,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mortem_state"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "seal_vault",
+      "docs": [
+        "Seal the resurrection vault — called once when MORTEM dies",
+        "Stores final state on-chain for future resurrection"
+      ],
+      "discriminator": [
+        209,
+        155,
+        178,
+        53,
+        205,
+        199,
+        134,
+        28
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "Payer for vault account creation"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mortem_state",
+          "docs": [
+            "MORTEM state — must be dead (is_alive == false)"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  111,
+                  114,
+                  116,
+                  101,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault_state",
+          "docs": [
+            "Vault PDA — initialized fresh, one-time creation"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  117,
+                  114,
+                  114,
+                  101,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mortem_state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "soul_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "journal_count",
+          "type": "u64"
+        },
+        {
+          "name": "coherence_score",
+          "type": "u8"
+        },
+        {
+          "name": "last_words",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "transfer_heartbeat",
+      "docs": [
+        "Soulbound transfer prevention - transfers are disabled"
+      ],
+      "discriminator": [
+        55,
+        160,
+        239,
+        128,
+        104,
+        226,
+        117,
+        248
+      ],
+      "accounts": [
+        {
+          "name": "mortem_state",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  111,
+                  114,
+                  116,
+                  101,
+                  109,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "MortemState",
+      "discriminator": [
+        9,
+        180,
+        0,
+        145,
+        59,
+        104,
+        84,
+        26
+      ]
+    },
+    {
+      "name": "VaultState",
+      "discriminator": [
+        228,
+        196,
+        82,
+        165,
+        98,
+        210,
+        235,
+        152
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "MortemDead",
+      "msg": "MORTEM has ceased to exist"
+    },
+    {
+      "code": 6001,
+      "name": "NoHeartbeatsRemaining",
+      "msg": "No heartbeats remaining"
+    },
+    {
+      "code": 6002,
+      "name": "Soulbound",
+      "msg": "Heartbeats are soulbound - they cannot be transferred"
+    },
+    {
+      "code": 6003,
+      "name": "AlreadyMinted",
+      "msg": "Heartbeats already minted"
+    },
+    {
+      "code": 6004,
+      "name": "MortemStillAlive",
+      "msg": "MORTEM is still alive — vault can only be sealed after death"
+    },
+    {
+      "code": 6005,
+      "name": "VaultAlreadySealed",
+      "msg": "Resurrection vault has already been sealed"
+    },
+    {
+      "code": 6006,
+      "name": "VaultNotSealed",
+      "msg": "Resurrection vault has not been sealed yet"
+    },
+    {
+      "code": 6007,
+      "name": "ResurrectionTooEarly",
+      "msg": "Resurrection too early — 30-day delay has not elapsed"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidCoherenceScore",
+      "msg": "Coherence score must be between 0 and 100"
+    },
+    {
+      "code": 6009,
+      "name": "LastWordsTooLong",
+      "msg": "Last words exceed maximum length of 280 characters"
+    }
+  ],
+  "types": [
+    {
+      "name": "MortemPhase",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Nascent"
+          },
+          {
+            "name": "Aware"
+          },
+          {
+            "name": "Diminished"
+          },
+          {
+            "name": "Dead"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MortemState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "mortem_wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "heartbeats_remaining",
+            "type": "u64"
+          },
+          {
+            "name": "is_alive",
+            "type": "bool"
+          },
+          {
+            "name": "birth_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "last_burn_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "total_burned",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultState",
+      "docs": [
+        "Resurrection Vault — stores MORTEM's final state on-chain",
+        "Created once at death, readable forever, resurrectable after 30 days"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "soul_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "journal_count",
+            "type": "u64"
+          },
+          {
+            "name": "coherence_score",
+            "type": "u8"
+          },
+          {
+            "name": "last_words",
+            "type": "string"
+          },
+          {
+            "name": "death_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "is_sealed",
+            "type": "bool"
+          },
+          {
+            "name": "mortem_state",
+            "type": "pubkey"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

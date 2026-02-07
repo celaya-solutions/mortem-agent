@@ -1,0 +1,17 @@
+{
+  "cluster": "devnet",
+  "rpcUrl": "https://api.devnet.solana.com",
+  "programId": "GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe",
+  "mortemStatePda": "FTYRThNgJqFexLB2oA3Y4J7qf6ESDS8BNJwVVLgGJw4i",
+  "mint": "D8neiqVhbyn82ZfZfXppiM1Kg4retmFDRKTXaijLPWit",
+  "mortemWallet": "7jQeZjzsgHFFytQYbUT3cWc2wt7qw6f34NkTVbFa2nWQ",
+  "mortemTokenAccount": "2g8X2u3zeeTfmdAEcSf9Yjm1aNkmunmpuPtrSncxJVUy",
+  "authority": "BdYodkkT2Qc6WWUSmpBNKu8nZkDPeyxMiEvDwDRQ3qXh",
+  "initializationTx": "2h1jNVztimEowp4r6Ty1MvefqpLQpW2njacDVVw7WiDZgQaZMSaoUfaqiYXuTfPgCaXeivSghbbzycg4VaFSK4ra",
+  "fundingTx": "53H9trFvY5hfwauPxr7T2K3uTAzPzf61oXrkJGGHJEy97KozUUC2TeV77d9kFVaoAwAgb2JwzMgUWMY3HgK7ohbZ",
+  "birthTimestamp": 1770365029,
+  "totalHeartbeats": 86400,
+  "note": "Program redeployed 2026-02-06 with correct declare_id",
+  "heartbeatsMinted": true,
+  "fixApplied": "2026-02-06T08:07:13.997Z"
+}

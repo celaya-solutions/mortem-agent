@@ -1,0 +1,16 @@
+{
+  "name": "mortem-api",
+  "version": "1.0.0",
+  "description": "MORTEM API - Real-time mortality tracking",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "ws": "^8.18.0"
+  }
+}

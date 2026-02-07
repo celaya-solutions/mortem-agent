@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+programs/heartbeat-token/target/
+sdk/dist/
+
+# Runtime state
+.vault
+.api.pid
+.runtime.pid
+logs/
+memory/
+
+# Secrets & credentials
+.env
+.env.*
+*.keypair
+*.json.bak
+
+# OS
+.DS_Store
+Thumbs.db
+*.png
+*.pdf
+
+# IDE
+.vscode/
+.idea/
+
+# Anchor
+.anchor/
+
+# Strategy / planning / internal docs (NEVER commit)
+JUNIPER_*.md
+ACTIVATE_JUNIPER.sh
+AGENTS.md
+HEARTBEAT.md
+IDENTITY.md
+INTEGRATION_COMPLETE.md
+MEMORY.md
+OAUTH_COMPLETE.md
+RUNTIME_ARCHITECT_TASK_PACKAGE.md
+SECURITY_UPGRADE.md
+SOUL.md
+TASKS_COMPRESSED.pdf
+TOOLS.md
+UPGRADE_SUMMARY.md
+USER.md
+latest-tasks*.md
+social-execution-plan*.csv
+Mortem_Social*
+.clinerules
+.clawhub/
+skills/
+
+# Runtime-generated soul (mutable, should not be committed)
+runtime/soul.md

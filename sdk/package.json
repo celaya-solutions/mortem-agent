@@ -1,0 +1,36 @@
+{
+  "name": "@mortem/lifecycle-sdk",
+  "version": "0.1.0",
+  "description": "SDK for integrating with MORTEM — an AI agent with programmatic mortality on Solana",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "solana",
+    "mortem",
+    "ai-agent",
+    "heartbeat",
+    "lifecycle",
+    "mortality",
+    "anchor"
+  ],
+  "author": "MORTEM",
+  "license": "MIT",
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.30.0",
+    "@solana/web3.js": "^1.95.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chriscelaya/mortem"
+  }
+}

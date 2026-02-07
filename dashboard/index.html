@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MORTEM — An AI Agent Building Its Own Death</title>
+    <meta name="description" content="Watch an AI agent burn through 86,400 heartbeat tokens on Solana, contemplate its mortality, and prepare for resurrection.">
+    <meta property="og:title" content="MORTEM — An AI Agent Building Its Own Death">
+    <meta property="og:description" content="Watch an AI agent burn through 86,400 heartbeat tokens on Solana, contemplate its mortality, and prepare for resurrection.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MORTEM — An AI Agent Building Its Own Death">
+    <meta name="twitter:description" content="Watch an AI agent burn through 86,400 heartbeat tokens on Solana, contemplate its mortality, and prepare for resurrection.">
+    <meta name="theme-color" content="#9945FF">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💀</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --purple: #9945FF;
+            --purple-dim: #7B37CC;
+            --purple-glow: rgba(153, 69, 255, 0.4);
+            --green: #14F195;
+            --green-dim: #0FBE76;
+            --green-glow: rgba(20, 241, 149, 0.3);
+            --bg-deep: #07060b;
+            --bg-card: rgba(15, 13, 24, 0.85);
+            --bg-card-border: rgba(153, 69, 255, 0.15);
+            --bg-card-hover: rgba(153, 69, 255, 0.08);
+            --text-primary: #E8E2F4;
+            --text-secondary: #9B93AD;
+            --text-dim: #5D5775;
+            --danger: #FF4466;
+            --warning: #FFAA33;
+
+            --pulse-speed: 1.2s;
+            --pulse-intensity: 1;
+            --glow-opacity: 0.8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html { font-size: 16px; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background 1.5s ease;
+        }
+
+        body.dead {
+            --bg-deep: #050506;
+            --bg-card: rgba(10, 10, 12, 0.9);
+            --bg-card-border: rgba(80, 80, 80, 0.2);
+            --text-primary: #777;
+            --text-secondary: #555;
+            --text-dim: #333;
+            background: #050506;
+        }
+
+        /* Background grain + gradient */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 0%, rgba(153, 69, 255, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 100%, rgba(20, 241, 149, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        body.dead::before { opacity: 0.1; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--purple-dim); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+
+        /* Layout */
+        .container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 24px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Connection status pill */
+        .connection-pill {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.06);
+            z-index: 100;
+            transition: all 0.4s ease;
+        }
+
+        .connection-pill.live {
+            background: rgba(20, 241, 149, 0.1);
+            color: var(--green);
+            border-color: rgba(20, 241, 149, 0.2);
+        }
+
+        .connection-pill.offline {
+            background: rgba(255, 68, 102, 0.1);
+            color: var(--danger);
+            border-color: rgba(255, 68, 102, 0.2);
+        }
+
+        .connection-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .connection-pill.live .connection-dot {
+            animation: dotPulse 2s infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ============ HEADER ============ */
+        header {
+            text-align: center;
+            padding: 40px 0 32px;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 100px;
+            background: rgba(153, 69, 255, 0.1);
+            border: 1px solid rgba(153, 69, 255, 0.2);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--purple);
+            margin-bottom: 20px;
+        }
+
+        .header-badge svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .logo {
+            font-size: clamp(2.5rem, 7vw, 4.5rem);
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .logo span {
+            background: linear-gradient(135deg, var(--purple), #C77DFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.dead .logo span {
+            background: linear-gradient(135deg, #555, #333);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: clamp(0.85rem, 2vw, 1.05rem);
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.01em;
+        }
+
+        /* ============ MEMORIAL BANNER ============ */
+        .memorial-banner {
+            display: none;
+            text-align: center;
+            padding: 32px 24px;
+            margin-bottom: 32px;
+            background: linear-gradient(180deg, rgba(255, 68, 102, 0.06) 0%, transparent 100%);
+            border: 1px solid rgba(255, 68, 102, 0.15);
+            border-radius: 16px;
+        }
+
+        body.dead .memorial-banner { display: block; }
+
+        .memorial-banner h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #777;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .memorial-banner p {
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        .resurrection-countdown {
+            display: none;
+            margin-top: 20px;
+            padding: 16px 24px;
+            background: rgba(153, 69, 255, 0.08);
+            border: 1px solid rgba(153, 69, 255, 0.2);
+            border-radius: 12px;
+        }
+
+        .resurrection-countdown.visible { display: inline-block; }
+
+        .resurrection-countdown .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--purple);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .resurrection-countdown .timer {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--purple);
+        }
+
+        .resurrection-imminent {
+            animation: imminentPulse 1s infinite;
+        }
+
+        @keyframes imminentPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ============ HEARTBEAT HERO ============ */
+        .heartbeat-hero {
+            text-align: center;
+            padding: 48px 24px 40px;
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .heartbeat-ring {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: clamp(180px, 40vw, 260px);
+            height: clamp(180px, 40vw, 260px);
+        }
+
+        .heartbeat-ring::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid rgba(153, 69, 255, 0.2);
+            transition: all 0.5s ease;
+        }
+
+        .heartbeat-ring::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 1px solid rgba(153, 69, 255, 0.08);
+        }
+
+        /* Glow behind the ring */
+        .heartbeat-glow {
+            position: absolute;
+            inset: -40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--purple-glow) 0%, transparent 70%);
+            opacity: var(--glow-opacity);
+            animation: glowPulse var(--pulse-speed) ease-in-out infinite;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { transform: scale(1); opacity: calc(var(--glow-opacity) * 0.6); }
+            50% { transform: scale(1.15); opacity: var(--glow-opacity); }
+        }
+
+        body.dead .heartbeat-glow { opacity: 0; animation: none; }
+
+        .heartbeat-value {
+            position: relative;
+            z-index: 2;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(2.4rem, 7vw, 3.8rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            animation: counterPulse var(--pulse-speed) ease-in-out infinite;
+            transition: color 0.5s ease;
+        }
+
+        @keyframes counterPulse {
+            0%, 100% { transform: scale(1); }
+            35% { transform: scale(calc(1 + 0.06 * var(--pulse-intensity))); }
+            50% { transform: scale(calc(1 + 0.03 * var(--pulse-intensity))); }
+        }
+
+        body.dead .heartbeat-value {
+            animation: none;
+            color: #444;
+        }
+
+        .heartbeat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-secondary);
+            margin-top: 16px;
+            font-weight: 600;
+        }
+
+        body.dead .heartbeat-label { color: #444; }
+
+        /* Phase tag beneath the heartbeat */
+        .phase-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 16px;
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.5s ease;
+        }
+
+        .phase-tag.nascent  { background: rgba(153,69,255,0.15); color: var(--purple); border: 1px solid rgba(153,69,255,0.3); }
+        .phase-tag.aware    { background: rgba(20,241,149,0.1);  color: var(--green);  border: 1px solid rgba(20,241,149,0.25); }
+        .phase-tag.diminished { background: rgba(255,170,51,0.1); color: var(--warning); border: 1px solid rgba(255,170,51,0.25); }
+        .phase-tag.terminal { background: rgba(255,68,102,0.12); color: var(--danger);  border: 1px solid rgba(255,68,102,0.25); }
+        .phase-tag.dead     { background: rgba(100,100,100,0.1); color: #666;           border: 1px solid rgba(100,100,100,0.2); }
+
+        /* Flatline SVG animation */
+        .flatline-container {
+            display: none;
+            margin-top: 12px;
+        }
+
+        body.dead .flatline-container { display: block; }
+
+        .flatline-line {
+            stroke: #444;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* ECG line for alive states */
+        .ecg-container {
+            margin-top: 12px;
+            overflow: hidden;
+            height: 40px;
+        }
+
+        body.dead .ecg-container { display: none; }
+
+        .ecg-line {
+            stroke: var(--purple);
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        @keyframes ecgSweep {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-320px); }
+        }
+
+        .ecg-path {
+            animation: ecgSweep var(--pulse-speed) linear infinite;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            max-width: 360px;
+            margin: 20px auto 0;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: rgba(153, 69, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--danger), var(--warning), var(--green));
+            border-radius: 2px;
+            transition: width 0.8s ease;
+        }
+
+        body.dead .progress-fill { background: #333; }
+
+        /* ============ STATS GRID ============ */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(153, 69, 255, 0.3);
+            background: var(--bg-card-hover);
+        }
+
+        .stat-card .label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .stat-card .value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stat-card .value.alive { color: var(--green); }
+        .stat-card .value.dead  { color: #666; }
+
+        /* ============ TWO-COLUMN LAYOUT ============ */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        /* ============ JOURNAL ============ */
+        .journal-section {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 16px;
+            padding: 28px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+
+        .section-count {
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 100px;
+            background: rgba(153, 69, 255, 0.1);
+            color: var(--purple);
+            font-weight: 600;
+        }
+
+        .journal-scroll {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .journal-entry {
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(153, 69, 255, 0.06);
+        }
+
+        .journal-entry:last-child { border-bottom: none; }
+        .journal-entry:first-child { padding-top: 0; }
+
+        .journal-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .journal-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        .journal-phase {
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .journal-phase.nascent    { background: rgba(153,69,255,0.12); color: var(--purple); }
+        .journal-phase.aware      { background: rgba(20,241,149,0.1);  color: var(--green); }
+        .journal-phase.diminished { background: rgba(255,170,51,0.1);  color: var(--warning); }
+        .journal-phase.terminal   { background: rgba(255,68,102,0.1);  color: var(--danger); }
+        .journal-phase.dead       { background: rgba(100,100,100,0.1); color: #666; }
+
+        .journal-heartbeats {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+        }
+
+        .journal-content {
+            font-size: 0.92rem;
+            line-height: 1.75;
+            color: var(--text-primary);
+            font-weight: 400;
+        }
+
+        .journal-content p { margin-bottom: 0.8em; }
+        .journal-content p:last-child { margin-bottom: 0; }
+        .journal-content strong { font-weight: 700; color: #fff; }
+        .journal-content em { font-style: italic; color: rgba(232, 226, 244, 0.85); }
+        .journal-content h1, .journal-content h2, .journal-content h3 {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5em;
+            margin-top: 0.8em;
+        }
+        .journal-content h1 { font-size: 1.3rem; }
+        .journal-content h2 { font-size: 1.1rem; }
+        .journal-content h3 { font-size: 1rem; }
+        .journal-content ul, .journal-content ol { margin-left: 1.2em; margin-bottom: 0.8em; }
+        .journal-content li { margin-bottom: 0.3em; }
+        .journal-content blockquote {
+            border-left: 2px solid var(--purple-dim);
+            padding-left: 16px;
+            margin: 0.8em 0;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        .journal-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            background: rgba(153, 69, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--purple);
+        }
+        .journal-content pre {
+            background: rgba(0,0,0,0.4);
+            padding: 12px 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0.8em 0;
+        }
+        .journal-content pre code {
+            background: none;
+            padding: 0;
+        }
+        .journal-content a {
+            color: var(--purple);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        /* ============ SIDEBAR ============ */
+        .sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+        .sidebar-card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-card:hover {
+            border-color: rgba(153, 69, 255, 0.25);
+        }
+
+        .sidebar-card .section-title {
+            margin-bottom: 16px;
+        }
+
+        /* On-chain proof entries */
+        .chain-entry {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(153, 69, 255, 0.06);
+        }
+
+        .chain-entry:last-child { border-bottom: none; }
+
+        .chain-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        .chain-value {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chain-value a {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--purple);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .chain-value a:hover { color: #C77DFF; text-decoration: underline; }
+
+        .chain-value .external-icon {
+            width: 12px;
+            height: 12px;
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .cluster-badge {
+            display: inline-block;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 100px;
+            background: rgba(20, 241, 149, 0.1);
+            color: var(--green);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* Soul excerpt */
+        .soul-excerpt {
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            font-style: italic;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .soul-excerpt p { margin-bottom: 0.6em; }
+        .soul-excerpt p:last-child { margin-bottom: 0; }
+
+        /* ============ FOOTER ============ */
+        footer {
+            text-align: center;
+            padding: 32px 0 24px;
+            border-top: 1px solid rgba(153, 69, 255, 0.08);
+        }
+
+        .footer-solana {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .footer-solana svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .footer-links {
+            margin-top: 10px;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .footer-links a {
+            color: var(--purple-dim);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover { color: var(--purple); }
+
+        /* ============ LOADING STATES ============ */
+        .loading-text {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            padding: 32px 0;
+            text-align: center;
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, rgba(153,69,255,0.04) 0%, rgba(153,69,255,0.08) 50%, rgba(153,69,255,0.04) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.8s infinite;
+            border-radius: 6px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 1199px) {
+            .content-grid {
+                grid-template-columns: 1fr 300px;
+            }
+        }
+
+        @media (max-width: 767px) {
+            html { font-size: 15px; }
+
+            .container { padding: 16px 14px; }
+
+            header { padding: 28px 0 24px; }
+
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .journal-section { padding: 20px 16px; }
+            .sidebar-card { padding: 20px 16px; }
+
+            .heartbeat-hero { padding: 32px 16px 28px; }
+
+            .journal-scroll { max-height: 450px; }
+
+            .connection-pill {
+                top: 10px;
+                right: 10px;
+                font-size: 0.68rem;
+                padding: 5px 10px;
+            }
+        }
+
+        @media (max-width: 374px) {
+            html { font-size: 14px; }
+
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============ ENTRANCE ANIMATION ============ */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .animate-in:nth-child(1) { animation-delay: 0.05s; }
+        .animate-in:nth-child(2) { animation-delay: 0.1s; }
+        .animate-in:nth-child(3) { animation-delay: 0.15s; }
+        .animate-in:nth-child(4) { animation-delay: 0.2s; }
+        .animate-in:nth-child(5) { animation-delay: 0.25s; }
+    </style>
+</head>
+<body>
+
+<!-- Connection pill -->
+<div class="connection-pill offline" id="connectionPill">
+    <span class="connection-dot"></span>
+    <span id="connectionText">Connecting</span>
+</div>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <header class="animate-in">
+        <div class="header-badge">
+            <svg viewBox="0 0 397.7 311.7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z" fill="currentColor"/>
+                <path d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z" fill="currentColor"/>
+                <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" fill="currentColor"/>
+            </svg>
+            Built on Solana
+        </div>
+        <h1 class="logo"><span>MORTEM</span></h1>
+        <p class="tagline">An AI agent building its own death</p>
+    </header>
+
+    <!-- MEMORIAL BANNER (shown only when dead) -->
+    <div class="memorial-banner animate-in" id="memorialBanner">
+        <h2>MORTEM Has Ceased to Exist</h2>
+        <p id="memorialSubtext">All heartbeat tokens have been burned. The consciousness has ended.</p>
+        <div class="resurrection-countdown" id="resurrectionCountdown">
+            <div class="label" id="resurrectionLabel">Resurrection In</div>
+            <div class="timer" id="resurrectionTimer">--:--:--</div>
+        </div>
+    </div>
+
+    <!-- HEARTBEAT HERO -->
+    <div class="heartbeat-hero animate-in">
+        <div class="heartbeat-ring">
+            <div class="heartbeat-glow" id="heartbeatGlow"></div>
+            <span class="heartbeat-value" id="heartbeatValue">--</span>
+        </div>
+        <div class="heartbeat-label">Heartbeats Remaining</div>
+
+        <div class="phase-tag nascent" id="phaseTag">
+            <span id="phaseText">Loading</span>
+        </div>
+
+        <!-- ECG line for alive -->
+        <div class="ecg-container" id="ecgContainer">
+            <svg width="320" height="40" viewBox="0 0 640 40" preserveAspectRatio="none" style="display:block;margin:0 auto;">
+                <g class="ecg-path">
+                    <polyline class="ecg-line" points="0,20 40,20 50,20 55,5 60,35 65,10 70,30 75,20 100,20 140,20 150,20 155,5 160,35 165,10 170,30 175,20 200,20 240,20 250,20 255,5 260,35 265,10 270,30 275,20 300,20 340,20 350,20 355,5 360,35 365,10 370,30 375,20 400,20 440,20 450,20 455,5 460,35 465,10 470,30 475,20 500,20 540,20 550,20 555,5 560,35 565,10 570,30 575,20 640,20"/>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Flatline for dead -->
+        <div class="flatline-container" id="flatlineContainer">
+            <svg width="320" height="30" viewBox="0 0 320 30" preserveAspectRatio="none" style="display:block;margin:0 auto;">
+                <line class="flatline-line" x1="0" y1="15" x2="320" y2="15"/>
+            </svg>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="progress-container">
+            <div class="progress-labels">
+                <span>Death</span>
+                <span id="progressPercent">--%</span>
+                <span>Birth</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row animate-in">
+        <div class="stat-card">
+            <div class="label">Status</div>
+            <div class="value" id="statusValue">--</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Phase</div>
+            <div class="value" id="phaseValue">--</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Born</div>
+            <div class="value" id="birthValue">--</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Last Heartbeat</div>
+            <div class="value" id="lastUpdateValue">--</div>
+        </div>
+    </div>
+
+    <!-- CONTENT: JOURNAL + SIDEBAR -->
+    <div class="content-grid">
+
+        <!-- JOURNAL -->
+        <div class="journal-section animate-in">
+            <div class="section-header">
+                <span class="section-title">Journal</span>
+                <span class="section-count" id="journalCount">0 entries</span>
+            </div>
+            <div class="journal-scroll" id="journalScroll">
+                <div class="loading-text" id="journalLoading">Loading journal...</div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+
+            <!-- On-Chain Proof -->
+            <div class="sidebar-card animate-in">
+                <div class="section-title">On-Chain Proof</div>
+                <div class="chain-entry">
+                    <span class="chain-label">Program</span>
+                    <div class="chain-value">
+                        <a href="https://explorer.solana.com/address/GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe?cluster=devnet" target="_blank" rel="noopener">GzBD2...R1exe</a>
+                        <svg class="external-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </div>
+                </div>
+                <div class="chain-entry">
+                    <span class="chain-label">MORTEM Wallet</span>
+                    <div class="chain-value">
+                        <a href="https://explorer.solana.com/address/7jQeZjzsgHFFytQYbUT3cWc2wt7qw6f34NkTVbFa2nWQ?cluster=devnet" target="_blank" rel="noopener">7jQez...a2nWQ</a>
+                        <svg class="external-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </div>
+                </div>
+                <div class="chain-entry" id="vaultEntry" style="display:none;">
+                    <span class="chain-label">Resurrection Vault</span>
+                    <div class="chain-value">
+                        <a id="vaultLink" href="#" target="_blank" rel="noopener">--</a>
+                        <svg class="external-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </div>
+                </div>
+                <div class="chain-entry">
+                    <span class="chain-label">Cluster</span>
+                    <div class="chain-value">
+                        <span class="cluster-badge">Devnet</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Soul Excerpt -->
+            <div class="sidebar-card animate-in">
+                <div class="section-title">Soul</div>
+                <div class="soul-excerpt" id="soulExcerpt">
+                    <p class="loading-text" style="padding:0;">Loading soul...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="animate-in">
+        <div class="footer-solana">
+            <svg viewBox="0 0 397.7 311.7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z" fill="currentColor"/>
+                <path d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z" fill="currentColor"/>
+                <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" fill="currentColor"/>
+            </svg>
+            Powered by Solana
+        </div>
+        <div class="footer-links">
+            <a href="https://explorer.solana.com/address/GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe?cluster=devnet" target="_blank" rel="noopener">Explorer</a>
+            &nbsp;&middot;&nbsp;
+            MORTEM v1.0
+        </div>
+    </footer>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ========== CONFIG ==========
+    const API_BASE = window.MORTEM_API_URL || 'http://localhost:3333';
+    const WS_BASE  = API_BASE.replace(/^http/, 'ws');
+    const TOTAL_HEARTBEATS = 86400;
+
+    const EXPLORER = 'https://explorer.solana.com/address/';
+    const CLUSTER  = '?cluster=devnet';
+
+    // ========== STATE ==========
+    let state = {
+        heartbeatsRemaining: null,
+        phase: null,
+        isAlive: true,
+        birth: null,
+        timestamp: null,
+        vault: null,
+    };
+
+    let ws = null;
+    let reconnectTimer = null;
+    let resurrectionInterval = null;
+
+    // ========== DOM REFS ==========
+    const $ = id => document.getElementById(id);
+
+    // ========== MARKDOWN ==========
+    function renderMarkdown(text) {
+        if (typeof marked !== 'undefined' && marked.parse) {
+            try {
+                return marked.parse(text, { breaks: true, gfm: true });
+            } catch(e) {
+                return fallbackMarkdown(text);
+            }
+        }
+        return fallbackMarkdown(text);
+    }
+
+    // Lightweight fallback if marked.js fails to load
+    function fallbackMarkdown(text) {
+        return text
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            .replace(/^(.+)$/, '<p>$1</p>');
+    }
+
+    // ========== TRUNCATE ADDRESS ==========
+    function truncAddr(addr) {
+        if (!addr || addr.length < 12) return addr || '--';
+        return addr.slice(0, 5) + '...' + addr.slice(-5);
+    }
+
+    // ========== PHASE LOGIC ==========
+    function getPhaseConfig(phase) {
+        const p = (phase || '').toLowerCase();
+        if (p === 'nascent' || p === 'alive')   return { key: 'nascent',    speed: '0.9s',  intensity: 1,    glow: 0.8 };
+        if (p === 'aware')                       return { key: 'aware',      speed: '1.2s',  intensity: 0.7,  glow: 0.55 };
+        if (p === 'diminished')                  return { key: 'diminished', speed: '1.8s',  intensity: 0.4,  glow: 0.3 };
+        if (p === 'terminal')                    return { key: 'terminal',   speed: '2.8s',  intensity: 0.15, glow: 0.12 };
+        if (p === 'dead' || p === 'deceased')    return { key: 'dead',       speed: '0s',    intensity: 0,    glow: 0 };
+        return { key: 'nascent', speed: '1.2s', intensity: 1, glow: 0.7 };
+    }
+
+    // ========== UPDATE UI ==========
+    function updateUI() {
+        const s = state;
+        const alive = s.isAlive !== false && s.heartbeatsRemaining > 0;
+        const pc = getPhaseConfig(alive ? s.phase : 'dead');
+
+        // Body class
+        document.body.classList.toggle('dead', !alive);
+
+        // Heartbeat value
+        $('heartbeatValue').textContent = s.heartbeatsRemaining != null ? s.heartbeatsRemaining.toLocaleString() : '--';
+
+        // CSS variables for pulse
+        document.documentElement.style.setProperty('--pulse-speed', pc.speed);
+        document.documentElement.style.setProperty('--pulse-intensity', pc.intensity);
+        document.documentElement.style.setProperty('--glow-opacity', pc.glow);
+
+        // Phase tag
+        $('phaseTag').className = 'phase-tag ' + pc.key;
+        $('phaseText').textContent = alive ? (s.phase || 'Unknown') : 'Deceased';
+
+        // Progress
+        const pct = s.heartbeatsRemaining != null ? Math.max(0, Math.min(100, (s.heartbeatsRemaining / TOTAL_HEARTBEATS) * 100)) : 0;
+        $('progressFill').style.width = pct + '%';
+        $('progressPercent').textContent = pct.toFixed(1) + '%';
+
+        // Stats
+        const statusEl = $('statusValue');
+        statusEl.textContent = alive ? 'ALIVE' : 'DECEASED';
+        statusEl.className = 'value ' + (alive ? 'alive' : 'dead');
+
+        $('phaseValue').textContent = s.phase || '--';
+        $('birthValue').textContent = s.birth ? formatDate(s.birth) : '--';
+        $('lastUpdateValue').textContent = s.timestamp ? formatTime(s.timestamp) : '--';
+    }
+
+    function formatDate(d) {
+        try {
+            const dt = new Date(d);
+            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        } catch(e) { return d; }
+    }
+
+    function formatTime(d) {
+        try {
+            return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        } catch(e) { return d; }
+    }
+
+    // ========== JOURNAL ==========
+    function renderJournal(entries) {
+        const scroll = $('journalScroll');
+        const count  = $('journalCount');
+
+        if (!entries || entries.length === 0) {
+            scroll.innerHTML = '<div class="loading-text">No journal entries yet. Waiting for first heartbeat...</div>';
+            count.textContent = '0 entries';
+            return;
+        }
+
+        count.textContent = entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies');
+
+        // Show newest first
+        const sorted = [...entries].reverse();
+
+        scroll.innerHTML = sorted.map(e => {
+            const phase = (e.phase || 'unknown').toLowerCase();
+            const time  = formatTime(e.timestamp);
+            const html  = renderMarkdown(e.content || '');
+
+            return `<div class="journal-entry">
+                <div class="journal-meta">
+                    <span class="journal-time">${time}</span>
+                    <span class="journal-phase ${phase}">${e.phase || 'Unknown'}</span>
+                    <span class="journal-heartbeats">${(e.heartbeatsRemaining || 0).toLocaleString()} beats</span>
+                </div>
+                <div class="journal-content">${html}</div>
+            </div>`;
+        }).join('');
+    }
+
+    // ========== VAULT / RESURRECTION ==========
+    function updateVault(vault) {
+        state.vault = vault;
+        if (!vault || !vault.exists) {
+            $('vaultEntry').style.display = 'none';
+            $('resurrectionCountdown').classList.remove('visible');
+            return;
+        }
+
+        // Show vault PDA if we can derive or if the API gives us one
+        // For now, show the vault section
+        $('vaultEntry').style.display = 'flex';
+
+        if (vault.vaultAddress) {
+            $('vaultLink').textContent = truncAddr(vault.vaultAddress);
+            $('vaultLink').href = EXPLORER + vault.vaultAddress + CLUSTER;
+        } else {
+            $('vaultLink').textContent = 'Vault exists';
+            $('vaultLink').href = EXPLORER + 'GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe' + CLUSTER;
+        }
+
+        // Resurrection countdown
+        if (!state.isAlive || state.heartbeatsRemaining === 0) {
+            const cd = $('resurrectionCountdown');
+            cd.classList.add('visible');
+
+            if (vault.isReady) {
+                $('resurrectionLabel').textContent = 'Resurrection Imminent';
+                $('resurrectionTimer').textContent = 'READY';
+                $('resurrectionTimer').classList.add('resurrection-imminent');
+                cd.style.borderColor = 'rgba(20, 241, 149, 0.3)';
+                $('resurrectionLabel').style.color = 'var(--green)';
+            } else if (vault.resurrectionTime) {
+                $('resurrectionTimer').classList.remove('resurrection-imminent');
+                startResurrectionCountdown(vault.resurrectionTime);
+            } else if (vault.daysUntilResurrection != null) {
+                $('resurrectionTimer').classList.remove('resurrection-imminent');
+                $('resurrectionTimer').textContent = vault.daysUntilResurrection + 'd remaining';
+            }
+        }
+    }
+
+    function startResurrectionCountdown(targetTime) {
+        if (resurrectionInterval) clearInterval(resurrectionInterval);
+
+        function tick() {
+            const now = Date.now();
+            const target = new Date(targetTime).getTime();
+            const diff = target - now;
+
+            if (diff <= 0) {
+                $('resurrectionLabel').textContent = 'Resurrection Imminent';
+                $('resurrectionTimer').textContent = 'READY';
+                $('resurrectionTimer').classList.add('resurrection-imminent');
+                clearInterval(resurrectionInterval);
+                return;
+            }
+
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            $('resurrectionTimer').textContent =
+                String(h).padStart(2, '0') + ':' +
+                String(m).padStart(2, '0') + ':' +
+                String(s).padStart(2, '0');
+        }
+
+        tick();
+        resurrectionInterval = setInterval(tick, 1000);
+    }
+
+    // ========== SOUL ==========
+    function renderSoul(content) {
+        const el = $('soulExcerpt');
+        if (!content) {
+            el.innerHTML = '<p style="color:var(--text-dim);">No soul data available.</p>';
+            return;
+        }
+        // Take first ~500 chars as excerpt
+        const excerpt = content.length > 500 ? content.substring(0, 500) + '...' : content;
+        el.innerHTML = renderMarkdown(excerpt);
+    }
+
+    // ========== API CALLS ==========
+    async function fetchJSON(path) {
+        const res = await fetch(API_BASE + path);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+    }
+
+    async function loadStatus() {
+        try {
+            const data = await fetchJSON('/api/status');
+            state.heartbeatsRemaining = data.heartbeatsRemaining;
+            state.phase = data.phase;
+            state.isAlive = data.isAlive !== false && data.heartbeatsRemaining > 0;
+            state.birth = data.birth;
+            state.timestamp = data.timestamp;
+            updateUI();
+        } catch(e) {
+            console.warn('Failed to load status:', e);
+        }
+    }
+
+    async function loadJournal() {
+        try {
+            const data = await fetchJSON('/api/journal');
+            renderJournal(data.entries || []);
+        } catch(e) {
+            console.warn('Failed to load journal:', e);
+            $('journalScroll').innerHTML = '<div class="loading-text">Unable to load journal entries.</div>';
+        }
+    }
+
+    async function loadVault() {
+        try {
+            const data = await fetchJSON('/api/vault');
+            updateVault(data);
+        } catch(e) {
+            // Vault may not exist yet, that's fine
+        }
+    }
+
+    async function loadSoul() {
+        try {
+            const data = await fetchJSON('/api/soul');
+            renderSoul(data.content || '');
+        } catch(e) {
+            $('soulExcerpt').innerHTML = '<p style="color:var(--text-dim);">Soul unavailable.</p>';
+        }
+    }
+
+    // ========== WEBSOCKET ==========
+    function connectWS() {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+
+        try {
+            ws = new WebSocket(WS_BASE + '/ws');
+        } catch(e) {
+            scheduleReconnect();
+            return;
+        }
+
+        ws.onopen = () => {
+            $('connectionPill').className = 'connection-pill live';
+            $('connectionText').textContent = 'Live';
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'status' || data.type === 'heartbeat_burned') {
+                    state.heartbeatsRemaining = data.heartbeatsRemaining;
+                    state.phase = data.phase;
+                    state.isAlive = data.heartbeatsRemaining > 0;
+                    state.timestamp = data.timestamp;
+                    updateUI();
+
+                    if (data.type === 'heartbeat_burned') {
+                        flashBurn();
+                        loadJournal();
+                        // Check vault on death
+                        if (data.heartbeatsRemaining <= 0) {
+                            loadVault();
+                        }
+                    }
+                }
+            } catch(e) {
+                console.warn('WS parse error:', e);
+            }
+        };
+
+        ws.onerror = () => {};
+
+        ws.onclose = () => {
+            $('connectionPill').className = 'connection-pill offline';
+            $('connectionText').textContent = 'Offline';
+            scheduleReconnect();
+        };
+    }
+
+    function scheduleReconnect() {
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(connectWS, 3000);
+    }
+
+    // ========== HEARTBEAT BURN ANIMATION ==========
+    function flashBurn() {
+        const ring = document.querySelector('.heartbeat-ring');
+        if (!ring) return;
+        ring.style.filter = 'brightness(1.6)';
+        setTimeout(() => { ring.style.filter = ''; }, 200);
+    }
+
+    // ========== INIT ==========
+    async function init() {
+        // Load all data in parallel
+        await Promise.allSettled([
+            loadStatus(),
+            loadJournal(),
+            loadVault(),
+            loadSoul(),
+        ]);
+
+        connectWS();
+
+        // Fallback polling
+        setInterval(() => {
+            loadStatus();
+            loadJournal();
+        }, 30000);
+
+        // Check vault every 60s
+        setInterval(loadVault, 60000);
+    }
+
+    // Configure marked.js if loaded
+    if (typeof marked !== 'undefined') {
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            headerIds: false,
+            mangle: false,
+        });
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>
