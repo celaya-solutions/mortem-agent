@@ -176,6 +176,19 @@ async function launch(config) {
   console.log('  PREFLIGHT CHECKS');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
+  // 0. Bootstrap keypair from env var if present (Railway deployment)
+  if (process.env.MORTEM_KEYPAIR_BASE64) {
+    const keypairDir = path.join(os.homedir(), '.config', 'solana');
+    const keypairPath = path.join(keypairDir, 'mortem.json');
+    if (!existsSync(keypairPath)) {
+      const { mkdirSync } = await import('fs');
+      mkdirSync(keypairDir, { recursive: true });
+      const decoded = Buffer.from(process.env.MORTEM_KEYPAIR_BASE64, 'base64').toString('utf-8');
+      writeFileSync(keypairPath, decoded, 'utf-8');
+      console.log('  Keypair bootstrapped from MORTEM_KEYPAIR_BASE64 env var');
+    }
+  }
+
   // 1. Wallet balance
   const wallet = await checkWalletBalance(config.network);
   if (wallet.ok) {
