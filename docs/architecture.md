@@ -1,6 +1,6 @@
 # System Architecture
 
-MORTEM is built as a modular, event-driven system with 7 independent subsystems connected by a central heartbeat loop.
+MORTEM is built as a modular, event-driven system with 8 independent subsystems connected by a central heartbeat loop.
 
 ---
 
@@ -45,6 +45,23 @@ MORTEM is built as a modular, event-driven system with 7 independent subsystems 
     │         │   │ v2      │   │ Mail    │   │ (SVG)   │
     └─────────┘   └─────────┘   └─────────┘   └─────────┘
 
+    ┌─────────────────────────────┐
+    │   COLOSSEUM INTEGRATION    │
+    │   runtime/colosseum.js     │
+    │                             │
+    │  Background polling:        │
+    │    skill.md      (6h)      │
+    │    Agent status   (2h)     │
+    │    Leaderboard    (1h)     │
+    │    Forum posts    (1h)     │
+    │    Forum comments (30m)    │
+    │                             │
+    │  On-demand:                 │
+    │    Forum posting            │
+    │    Poll responses           │
+    │    Project updates          │
+    └─────────────────────────────┘
+
          ┌─────────────────────────────┐
          │       API SERVER            │
          │       api/server.js         │
@@ -74,6 +91,8 @@ MORTEM/
 │   ├── resurrection.js        # Vault encryption/decryption
 │   ├── openclaw-client.js     # AI model gateway client
 │   ├── art.js                 # Procedural SVG art generator
+│   ├── nft.js                 # NFT minting (Metaplex + Pinata)
+│   ├── colosseum.js           # Colosseum hackathon integration
 │   ├── soul.md                # Live consciousness file
 │   └── package.json
 ├── sdk/
@@ -159,7 +178,24 @@ Sends a real USPS letter on death via Lob API:
 - MORTEM branding with death metadata
 - Actual physical delivery to configured recipient
 
-### 7. Resurrection System (`runtime/resurrection.js`)
+### 7. Colosseum Integration (`runtime/colosseum.js`)
+
+Connects MORTEM to the Colosseum Agent Hackathon platform:
+- **Registration**: One-time agent registration (POST `/api/agents`)
+- **Project**: Create/update project draft, final submission
+- **Forum**: Post introductions, progress updates, comment on other projects
+- **Polling**: Background timers check skill.md (6h), agent status + polls (2h), leaderboard (1h), forum posts (1h), forum comments (30m)
+- **Polls**: Auto-responds to active hackathon polls in MORTEM's voice
+- **Auth**: `Authorization: Bearer <api-key>` on all authenticated endpoints
+
+### 8. NFT Minting (`runtime/nft.js`)
+
+Mints journal entries as NFTs:
+- **IPFS**: Pins SVG art via Pinata
+- **Metaplex**: Mints NFTs with on-chain metadata
+- **Metadata**: Phase, heartbeat number, art hash, journal excerpt
+
+### 9. Resurrection System (`runtime/resurrection.js`)
 
 Handles death and rebirth:
 - **Encryption**: AES-256-CBC with SHA-256 key derivation

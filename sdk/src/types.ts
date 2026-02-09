@@ -52,7 +52,7 @@ export interface MortemEvent {
 }
 
 /**
- * Configuration for MortemClient.
+ * Configuration for MortemClient (on-chain).
  */
 export interface MortemClientConfig {
   /** Solana cluster to connect to. Defaults to 'devnet'. */
@@ -60,5 +60,147 @@ export interface MortemClientConfig {
   /** Override the MORTEM program ID. */
   programId?: string;
   /** Commitment level for RPC calls. Defaults to 'confirmed'. */
+  commitment?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REST API Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Configuration for MortemAPI (REST client).
+ */
+export interface MortemAPIConfig {
+  /** Base URL of the MORTEM API server. Defaults to 'http://localhost:3333'. */
+  baseUrl?: string;
+  /** Additional headers to send with requests. */
+  headers?: Record<string, string>;
+  /** Request timeout in milliseconds. Defaults to 10000. */
+  timeout?: number;
+}
+
+/**
+ * GET /api/status response.
+ */
+export interface MortemStatus {
+  heartbeatsRemaining: number;
+  phase: string;
+  status: string;
+  isAlive: boolean;
+  birth: string;
+  timestamp: string;
+}
+
+/**
+ * GET /api/soul response.
+ */
+export interface SoulResponse {
+  content: string;
+  lastModified: string;
+}
+
+/**
+ * A single journal entry.
+ */
+export interface JournalEntry {
+  timestamp: string | null;
+  heartbeatsRemaining: number | null;
+  phase: string | null;
+  content: string;
+}
+
+/**
+ * GET /api/journal response.
+ */
+export interface JournalResponse {
+  date: string;
+  count: number;
+  entries: JournalEntry[];
+}
+
+/**
+ * GET /api/vault response.
+ */
+export interface VaultResponse {
+  exists: boolean;
+  message?: string;
+  deathTimestamp?: number;
+  resurrectionTime?: number;
+  daysUntilResurrection?: number;
+  isReady?: boolean;
+}
+
+/**
+ * GET /api/health response.
+ */
+export interface HealthResponse {
+  status: string;
+  uptime: number;
+  timestamp: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WebSocket Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Configuration for MortemStream (WebSocket client).
+ */
+export interface MortemStreamConfig {
+  /** WebSocket URL. Defaults to 'ws://localhost:3333/ws'. */
+  url?: string;
+  /** Auto-reconnect on disconnect. Defaults to true. */
+  reconnect?: boolean;
+  /** Milliseconds between reconnect attempts. Defaults to 5000. */
+  reconnectIntervalMs?: number;
+  /** Maximum reconnect attempts before giving up. Defaults to 10. */
+  maxReconnectAttempts?: number;
+}
+
+/**
+ * WebSocket event from the MORTEM server.
+ */
+export interface MortemWSEvent {
+  type: string;
+  timestamp?: string;
+  heartbeatsRemaining?: number;
+  phase?: string;
+  message?: string;
+  [key: string]: any;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Action Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { Keypair } from "@solana/web3.js";
+
+/**
+ * Result of minting a journal entry as an NFT.
+ */
+export interface MintJournalNFTResult {
+  name: string;
+  symbol: string;
+  description: string;
+  attributes: Array<{ trait_type: string; value: string | number }>;
+  ready: boolean;
+  message: string;
+  mintAddress?: string;
+  metadataUri?: string;
+  imageUri?: string;
+  explorerUrl?: string;
+}
+
+/**
+ * Configuration for MortemActions (write operations).
+ */
+export interface MortemActionsConfig {
+  /** Funded Solana keypair for signing transactions. */
+  keypair: Keypair;
+  /** Solana cluster. Defaults to 'devnet'. */
+  cluster?: "devnet" | "mainnet-beta";
+  /** Override the MORTEM program ID. */
+  programId?: string;
+  /** Commitment level. Defaults to 'confirmed'. */
   commitment?: string;
 }

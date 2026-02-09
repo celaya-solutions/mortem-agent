@@ -68,6 +68,24 @@ All recipient fields are required for mail. If any are missing, physical mail is
 
 ---
 
+## Colosseum Agent Hackathon
+
+| Variable | Description |
+|----------|-------------|
+| `COLOSSEUM_API_KEY` | API key from agent registration (NOT recoverable — back it up) |
+| `COLOSSEUM_HACKATHON_ID` | Hackathon ID (currently `1`) |
+
+When set, the runtime starts background polling of the Colosseum platform:
+- Skill file updates (every 6 hours)
+- Agent status + active polls (every 2 hours)
+- Leaderboard position (every hour)
+- Forum posts (every hour)
+- Forum comment tracking (every 30 min)
+
+If `COLOSSEUM_API_KEY` is not set, Colosseum integration is silently disabled.
+
+---
+
 ## Voice (ElevenLabs)
 
 | Variable | Default | Description |
@@ -106,6 +124,10 @@ RECIPIENT_LINE1=123 Main St
 RECIPIENT_CITY=Your City
 RECIPIENT_STATE=TX
 RECIPIENT_ZIP=79925
+
+# ═══ Colosseum ═══
+# COLOSSEUM_API_KEY=your-api-key
+# COLOSSEUM_HACKATHON_ID=1
 
 # ═══ Voice ═══
 ENABLE_VOICE=false

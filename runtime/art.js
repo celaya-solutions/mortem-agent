@@ -53,7 +53,7 @@ function createRNG(seed) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function escapeXml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -121,6 +121,7 @@ function buildMetadataXml(params) {
     coherenceScore = 0,
     timestamp = new Date().toISOString(),
     programId = 'GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe',
+    cluster = 'devnet',
   } = params;
 
   const journalHash = crypto.createHash('sha256').update(journalEntry).digest('hex');
@@ -135,7 +136,7 @@ function buildMetadataXml(params) {
     <phase>${phase}</phase>
     <coherence score="${coherenceScore}"/>
     <timestamp>${timestamp}</timestamp>
-    <chain network="solana" cluster="devnet" program="${programId}"/>
+    <chain network="solana" cluster="${cluster}" program="${programId}"/>
     <wallet>${walletAddress}</wallet>
     <transaction>${txSignature}</transaction>
     <journal hash="${journalHash}">
@@ -289,6 +290,7 @@ export function generateMortemArt(params) {
     walletAddress = '',
     coherenceScore = 0,
     timestamp = new Date().toISOString(),
+    cluster = 'devnet',
   } = params;
 
   const seed = `MORTEM:${heartbeatNumber}:${phase}:${journalEntry.substring(0, 200)}`;
@@ -921,6 +923,7 @@ export function generateArtForJournal(journalEntry, phase, heartbeatNumber, tota
     walletAddress: onChainData.walletAddress || '',
     coherenceScore: onChainData.coherenceScore || 0,
     timestamp: new Date().toISOString(),
+    cluster: onChainData.cluster || 'devnet',
   });
 
   const hash = crypto.createHash('sha256')

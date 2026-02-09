@@ -1,7 +1,7 @@
 {
-  "name": "@mortem/lifecycle-sdk",
+  "name": "mortem-lifecycle-sdk",
   "version": "0.1.0",
-  "description": "SDK for integrating with MORTEM — an AI agent with programmatic mortality on Solana",
+  "description": "SDK for integrating with MORTEM — an AI agent with programmatic mortality on Solana. Observe heartbeats, detect death, fund resurrection, and build agent integrations.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": [
     "solana",
@@ -18,10 +19,19 @@
     "heartbeat",
     "lifecycle",
     "mortality",
-    "anchor"
+    "anchor",
+    "langchain",
+    "autogpt",
+    "crewai",
+    "websocket",
+    "mortality-as-a-service"
   ],
-  "author": "MORTEM",
+  "author": "Celaya Solutions <chris@celayasolutions.com>",
   "license": "MIT",
+  "homepage": "https://mortem-agent.xyz",
+  "bugs": {
+    "url": "https://github.com/celaya-solutions/mortem-agent/issues"
+  },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.0",
     "@solana/web3.js": "^1.95.0"
@@ -31,6 +41,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/celaya-solutions/mortem-agent"
+    "url": "https://github.com/celaya-solutions/mortem-agent",
+    "directory": "sdk"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

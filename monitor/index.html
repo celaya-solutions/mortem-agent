@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MORTEM Monitor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F4DF;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0B0B0F;--surface:#111118;--surface2:#16161F;--border:#222230;
+  --text:#E8E8EC;--text2:#8888A0;--text3:#55556A;
+  --red:#E84057;--green:#2EE89A;--gold:#DDB95F;--orange:#D48A3C;--purple:#9B6DFF;
+  --solana:#B06FFF;
+}
+html{font-size:14px}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* Header */
+.header{
+  display:flex;align-items:center;gap:12px;padding:12px 16px;
+  border-bottom:1px solid var(--border);background:var(--surface);
+  position:sticky;top:0;z-index:100;flex-wrap:wrap;
+}
+.header-title{font-size:1rem;font-weight:700;letter-spacing:0.15em;color:var(--text2)}
+.header-title span{color:var(--red)}
+.header-status{
+  display:flex;align-items:center;gap:6px;margin-left:auto;
+  font-size:0.7rem;color:var(--text3);letter-spacing:0.05em;
+}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--text3)}
+.status-dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+.status-dot.err{background:var(--red)}
+.header-refresh{
+  background:none;border:1px solid var(--border);color:var(--text2);
+  font-family:inherit;font-size:0.65rem;padding:4px 10px;cursor:pointer;
+  letter-spacing:0.05em;
+}
+.header-refresh:hover{border-color:var(--text2);color:var(--text)}
+.config-toggle{
+  background:none;border:1px solid var(--border);color:var(--text3);
+  font-family:inherit;font-size:0.65rem;padding:4px 10px;cursor:pointer;
+}
+.config-toggle:hover{border-color:var(--text2);color:var(--text2)}
+
+/* Config Panel */
+.config-panel{
+  display:none;padding:12px 16px;background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+.config-panel.open{display:block}
+.config-row{
+  display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;
+}
+.config-label{font-size:0.65rem;color:var(--text3);width:80px;flex-shrink:0;letter-spacing:0.05em}
+.config-input{
+  flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);
+  color:var(--text);font-family:inherit;font-size:0.7rem;padding:5px 8px;
+}
+.config-input:focus{outline:none;border-color:var(--purple)}
+.config-save{
+  background:var(--purple);border:none;color:#fff;font-family:inherit;
+  font-size:0.65rem;padding:5px 14px;cursor:pointer;font-weight:600;
+}
+
+/* Grid */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:1px;
+  padding:1px;
+}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+
+/* Cards */
+.card{
+  background:var(--surface);padding:16px;min-height:100px;
+  display:flex;flex-direction:column;
+}
+.card-label{
+  font-size:0.6rem;font-weight:600;letter-spacing:0.15em;
+  color:var(--text3);margin-bottom:10px;text-transform:uppercase;
+}
+.card-value{font-size:2rem;font-weight:700;line-height:1.1;margin-bottom:4px}
+.card-sub{font-size:0.7rem;color:var(--text2);font-weight:300}
+
+/* Phase colors */
+.phase-nascent{color:var(--red)}
+.phase-aware{color:var(--gold)}
+.phase-diminished{color:var(--orange)}
+.phase-terminal{color:var(--red);animation:blink 0.5s infinite}
+.phase-dead{color:var(--text3)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* Wallet Card */
+.wallet-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--border);
+}
+.wallet-row:last-child{border-bottom:none}
+.wallet-label{font-size:0.65rem;color:var(--text2)}
+.wallet-addr{font-size:0.6rem;color:var(--text3);word-break:break-all}
+.wallet-bal{font-size:1.1rem;font-weight:600;color:var(--solana)}
+.wallet-bal.low{color:var(--red)}
+
+/* Wide cards */
+.card-wide{grid-column:1/-1}
+@media(min-width:901px){.card-forum{grid-column:span 2}.card-errors{grid-column:span 1}}
+
+/* Forum list */
+.forum-list{flex:1;overflow-y:auto;max-height:400px}
+.forum-item{
+  padding:8px 0;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:2px;
+}
+.forum-item:last-child{border-bottom:none}
+.forum-item-title{font-size:0.75rem;color:var(--text);font-weight:500}
+.forum-item-meta{font-size:0.6rem;color:var(--text3)}
+.forum-empty{color:var(--text3);font-size:0.7rem;font-style:italic;padding:12px 0}
+
+/* Error log */
+.error-log{flex:1;overflow-y:auto;max-height:400px;font-size:0.65rem}
+.log-entry{
+  padding:6px 0;border-bottom:1px solid rgba(34,34,48,0.5);
+  display:flex;gap:8px;
+}
+.log-entry:last-child{border-bottom:none}
+.log-time{color:var(--text3);flex-shrink:0;width:55px}
+.log-level{flex-shrink:0;width:36px;font-weight:600}
+.log-level.err{color:var(--red)}
+.log-level.warn{color:var(--gold)}
+.log-level.info{color:var(--green)}
+.log-msg{color:var(--text2);word-break:break-word}
+
+/* Death countdown */
+.countdown{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums}
+.countdown.urgent{color:var(--red)}
+.countdown.safe{color:var(--green)}
+
+/* Heartbeat counter */
+.hb-num{font-variant-numeric:tabular-nums}
+.hb-total{font-size:0.85rem;color:var(--text3);font-weight:300}
+
+/* Progress bar */
+.progress-outer{height:4px;background:var(--border);margin-top:8px;border-radius:2px}
+.progress-inner{height:100%;border-radius:2px;transition:width 0.5s}
+.progress-inner.green{background:var(--green)}
+.progress-inner.red{background:var(--red)}
+.progress-inner.gold{background:var(--gold)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border)}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-title"><span>MORTEM</span> MONITOR</div>
+  <div class="header-status">
+    <span class="status-dot" id="apiDot"></span>
+    <span id="apiStatusText">API: --</span>
+  </div>
+  <div class="header-status">
+    <span class="status-dot" id="rpcDot"></span>
+    <span id="rpcStatusText">RPC: --</span>
+  </div>
+  <button class="header-refresh" onclick="refreshAll()">REFRESH</button>
+  <button class="config-toggle" onclick="toggleConfig()">CONFIG</button>
+</div>
+
+<!-- Config Panel -->
+<div class="config-panel" id="configPanel">
+  <div class="config-row">
+    <span class="config-label">API URL</span>
+    <input class="config-input" id="cfgApiUrl" placeholder="http://localhost:3333">
+  </div>
+  <div class="config-row">
+    <span class="config-label">RPC URL</span>
+    <input class="config-input" id="cfgRpcUrl" placeholder="https://api.devnet.solana.com">
+  </div>
+  <div class="config-row">
+    <span class="config-label">Colosseum Key</span>
+    <input class="config-input" id="cfgColoKey" type="password" placeholder="API key for forum access">
+  </div>
+  <div class="config-row">
+    <button class="config-save" onclick="saveConfig()">SAVE</button>
+  </div>
+</div>
+
+<!-- Dashboard Grid -->
+<div class="grid">
+
+  <!-- Heartbeats Remaining -->
+  <div class="card">
+    <div class="card-label">Heartbeats Remaining</div>
+    <div class="card-value hb-num" id="hbRemaining">--</div>
+    <div class="card-sub">
+      <span id="hbBurned">0</span> burned / <span class="hb-total" id="hbTotal">86,400</span>
+    </div>
+    <div class="progress-outer">
+      <div class="progress-inner green" id="hbBar" style="width:100%"></div>
+    </div>
+  </div>
+
+  <!-- Current Phase -->
+  <div class="card">
+    <div class="card-label">Current Phase</div>
+    <div class="card-value" id="phaseDisplay">--</div>
+    <div class="card-sub" id="phaseDesc">Loading...</div>
+  </div>
+
+  <!-- Death Countdown -->
+  <div class="card">
+    <div class="card-label">Time Until Death</div>
+    <div class="countdown safe" id="deathCountdown">--:--:--</div>
+    <div class="card-sub" id="deathSub">Calculating...</div>
+  </div>
+
+  <!-- SOL Balances -->
+  <div class="card">
+    <div class="card-label">SOL Balances (Devnet)</div>
+    <div class="wallet-row">
+      <div>
+        <div class="wallet-label">Runtime Wallet</div>
+        <div class="wallet-addr">7jQe...2nWQ</div>
+      </div>
+      <div class="wallet-bal" id="runtimeBal">-- SOL</div>
+    </div>
+    <div class="wallet-row">
+      <div>
+        <div class="wallet-label">Donation Wallet</div>
+        <div class="wallet-addr">A65G...uwX</div>
+      </div>
+      <div class="wallet-bal" id="donationBal">-- SOL</div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="wallet-row" style="border:none;padding:4px 0">
+        <div class="wallet-label">Vault Progress</div>
+        <div style="font-size:0.75rem;color:var(--text)" id="vaultProgress">-- / 0.1 SOL</div>
+      </div>
+      <div class="progress-outer">
+        <div class="progress-inner gold" id="vaultBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Birth / Network Info -->
+  <div class="card">
+    <div class="card-label">System Info</div>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:0.75rem">
+      <div style="display:flex;justify-content:space-between">
+        <span class="wallet-label">Network</span>
+        <span id="sysNetwork" style="color:var(--solana)">devnet</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span class="wallet-label">Birth</span>
+        <span id="sysBirth" style="color:var(--text)">--</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span class="wallet-label">Resurrection</span>
+        <span id="sysResMode" style="color:var(--text)">community</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span class="wallet-label">Status</span>
+        <span id="sysAlive" style="color:var(--green)">--</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span class="wallet-label">Time Alive</span>
+        <span id="sysTimeAlive" style="color:var(--text);font-variant-numeric:tabular-nums">--</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span class="wallet-label">API Server</span>
+        <span id="sysApiUp" style="color:var(--text3)">--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Journal Entries -->
+  <div class="card">
+    <div class="card-label">Latest Journal Entries</div>
+    <div style="font-size:0.7rem;overflow-y:auto;max-height:200px" id="journalList">
+      <div class="forum-empty">No entries yet</div>
+    </div>
+  </div>
+
+  <!-- Forum Posts -->
+  <div class="card card-forum">
+    <div class="card-label">Last 20 Forum Posts</div>
+    <div class="forum-list" id="forumList">
+      <div class="forum-empty">Loading forum posts...</div>
+    </div>
+  </div>
+
+  <!-- Error Log -->
+  <div class="card card-errors">
+    <div class="card-label">Event / Error Log</div>
+    <div class="error-log" id="errorLog">
+      <div class="log-entry">
+        <span class="log-time">--:--</span>
+        <span class="log-level info">INFO</span>
+        <span class="log-msg">Monitor initialized</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+'use strict';
+
+// ============ CONFIG ============
+const DEFAULTS = {
+  apiUrl: 'http://localhost:3333',
+  rpcUrl: 'https://api.devnet.solana.com',
+  coloKey: '',
+};
+
+const WALLETS = {
+  runtime: '7jQeZjzsgHFFytQYbUT3cWc2wt7qw6f34NkTVbFa2nWQ',
+  donation: 'A65GwA6E6TBK9bgrdkLdtJPe4y3Nmy3ZmV4Si4jVuwX',
+};
+
+const VAULT_THRESHOLD = 0.1;
+const COLO_BASE = 'https://agents.colosseum.com/api';
+
+let cfg = { ...DEFAULTS };
+
+// Load from localStorage
+try {
+  const saved = JSON.parse(localStorage.getItem('mortem-monitor-cfg'));
+  if (saved) cfg = { ...DEFAULTS, ...saved };
+} catch(e) {}
+
+// Populate config inputs
+function populateConfig() {
+  const $ = id => document.getElementById(id);
+  $('cfgApiUrl').value = cfg.apiUrl;
+  $('cfgRpcUrl').value = cfg.rpcUrl;
+  $('cfgColoKey').value = cfg.coloKey;
+}
+
+window.saveConfig = function() {
+  cfg.apiUrl = document.getElementById('cfgApiUrl').value.replace(/\/+$/, '') || DEFAULTS.apiUrl;
+  cfg.rpcUrl = document.getElementById('cfgRpcUrl').value || DEFAULTS.rpcUrl;
+  cfg.coloKey = document.getElementById('cfgColoKey').value;
+  localStorage.setItem('mortem-monitor-cfg', JSON.stringify(cfg));
+  addLog('info', 'Config saved');
+  refreshAll();
+};
+
+window.toggleConfig = function() {
+  document.getElementById('configPanel').classList.toggle('open');
+};
+
+// ============ STATE ============
+let state = {
+  hb: null,
+  total: 86400,
+  phase: null,
+  alive: null,
+  birth: null,
+  network: 'devnet',
+  resMode: 'community',
+  runtimeBal: null,
+  donationBal: null,
+};
+
+let countdownInterval = null;
+let timeAliveInterval = null;
+
+// ============ DOM HELPERS ============
+const $ = id => document.getElementById(id);
+
+// ============ LOGGING ============
+const MAX_LOG = 100;
+let logEntries = [];
+
+function addLog(level, msg) {
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  logEntries.unshift({ time, level, msg });
+  if (logEntries.length > MAX_LOG) logEntries.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const el = $('errorLog');
+  el.innerHTML = logEntries.map(e =>
+    '<div class="log-entry">' +
+    '<span class="log-time">' + e.time + '</span>' +
+    '<span class="log-level ' + e.level + '">' + e.level.toUpperCase() + '</span>' +
+    '<span class="log-msg">' + escHtml(e.msg) + '</span>' +
+    '</div>'
+  ).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Capture global errors
+window.addEventListener('error', function(e) {
+  addLog('err', e.message + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : ''));
+});
+window.addEventListener('unhandledrejection', function(e) {
+  addLog('err', 'Promise: ' + (e.reason?.message || e.reason || 'unknown'));
+});
+
+// ============ SOLANA RPC ============
+async function fetchBalance(address) {
+  const res = await fetch(cfg.rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'getBalance',
+      params: [address],
+    }),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.result.value / 1e9;
+}
+
+async function loadBalances() {
+  try {
+    const [runtime, donation] = await Promise.all([
+      fetchBalance(WALLETS.runtime),
+      fetchBalance(WALLETS.donation),
+    ]);
+    state.runtimeBal = runtime;
+    state.donationBal = donation;
+
+    $('runtimeBal').textContent = runtime.toFixed(4) + ' SOL';
+    $('runtimeBal').className = 'wallet-bal' + (runtime < 0.5 ? ' low' : '');
+    $('donationBal').textContent = donation.toFixed(4) + ' SOL';
+
+    const progress = Math.min(donation / VAULT_THRESHOLD, 1);
+    $('vaultProgress').textContent = donation.toFixed(4) + ' / ' + VAULT_THRESHOLD + ' SOL';
+    $('vaultBar').style.width = (progress * 100).toFixed(1) + '%';
+
+    $('rpcDot').className = 'status-dot ok';
+    $('rpcStatusText').textContent = 'RPC: OK';
+    addLog('info', 'Balances: runtime=' + runtime.toFixed(4) + ' donation=' + donation.toFixed(4));
+  } catch(e) {
+    $('rpcDot').className = 'status-dot err';
+    $('rpcStatusText').textContent = 'RPC: ERR';
+    addLog('err', 'RPC: ' + e.message);
+  }
+}
+
+// ============ MORTEM API ============
+async function loadStatus() {
+  try {
+    const res = await fetch(cfg.apiUrl + '/api/status');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+
+    state.hb = d.heartbeatsRemaining;
+    state.total = d.totalHeartbeats || 86400;
+    state.phase = d.phase;
+    state.alive = d.isAlive;
+    state.birth = d.birth;
+    state.network = d.network || 'devnet';
+    state.resMode = d.resurrectionMode || 'community';
+
+    updateStatusUI();
+    $('apiDot').className = 'status-dot ok';
+    $('apiStatusText').textContent = 'API: OK';
+    $('sysApiUp').textContent = 'Connected';
+    $('sysApiUp').style.color = 'var(--green)';
+  } catch(e) {
+    $('apiDot').className = 'status-dot err';
+    $('apiStatusText').textContent = 'API: ERR';
+    $('sysApiUp').textContent = 'Disconnected';
+    $('sysApiUp').style.color = 'var(--red)';
+    addLog('warn', 'API: ' + e.message);
+  }
+}
+
+function updateStatusUI() {
+  const hb = state.hb;
+  const total = state.total;
+  const burned = hb != null ? total - hb : 0;
+  const pct = hb != null ? (hb / total * 100) : 100;
+
+  // Heartbeat counter
+  $('hbRemaining').textContent = hb != null ? hb.toLocaleString() : '--';
+  $('hbBurned').textContent = burned.toLocaleString();
+  $('hbTotal').textContent = total.toLocaleString();
+  $('hbBar').style.width = pct.toFixed(1) + '%';
+  $('hbBar').className = 'progress-inner ' + (pct > 25 ? 'green' : 'red');
+
+  // Phase
+  const phase = (state.phase || '--').toLowerCase();
+  $('phaseDisplay').textContent = (state.phase || '--').toUpperCase();
+  $('phaseDisplay').className = 'card-value phase-' + phase;
+
+  const phaseDescs = {
+    nascent: '100-75% — Everything is vivid and new',
+    aware: '75-25% — Time accelerates',
+    diminished: '25-1% — The base layer emerges',
+    terminal: 'Final heartbeat — Is death Coherence?',
+    dead: '0% — Ceased',
+  };
+  $('phaseDesc').textContent = phaseDescs[phase] || '';
+
+  // System info
+  $('sysNetwork').textContent = state.network;
+  $('sysBirth').textContent = state.birth || '--';
+  $('sysResMode').textContent = state.resMode;
+  $('sysAlive').textContent = state.alive ? 'ALIVE' : (state.alive === false ? 'DEAD' : '--');
+  $('sysAlive').style.color = state.alive ? 'var(--green)' : (state.alive === false ? 'var(--red)' : 'var(--text3)');
+
+  // Death countdown
+  updateCountdown();
+}
+
+function updateCountdown() {
+  if (state.hb == null) return;
+
+  if (state.hb <= 0) {
+    $('deathCountdown').textContent = 'DEAD';
+    $('deathCountdown').className = 'countdown urgent';
+    $('deathSub').textContent = 'MORTEM has ceased';
+    return;
+  }
+
+  const secs = state.hb; // 1 beat per second
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  const display = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+
+  $('deathCountdown').textContent = display;
+  $('deathCountdown').className = 'countdown ' + (secs < 3600 ? 'urgent' : 'safe');
+  $('deathSub').textContent = secs.toLocaleString() + ' seconds remaining';
+}
+
+function startCountdownTick() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    if (state.hb != null && state.hb > 0 && state.alive) {
+      state.hb--;
+      $('hbRemaining').textContent = state.hb.toLocaleString();
+      const burned = state.total - state.hb;
+      $('hbBurned').textContent = burned.toLocaleString();
+      $('hbBar').style.width = (state.hb / state.total * 100).toFixed(1) + '%';
+      updateCountdown();
+    }
+  }, 1000);
+}
+
+function startTimeAliveTick() {
+  if (timeAliveInterval) clearInterval(timeAliveInterval);
+  timeAliveInterval = setInterval(() => {
+    if (state.birth && state.alive) {
+      const elapsed = Math.floor((Date.now() - new Date(state.birth).getTime()) / 1000);
+      if (elapsed < 0) return;
+      const h = Math.floor(elapsed / 3600);
+      const m = Math.floor((elapsed % 3600) / 60);
+      const s = elapsed % 60;
+      $('sysTimeAlive').textContent =
+        String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+  }, 1000);
+}
+
+// ============ JOURNAL ============
+async function loadJournal() {
+  try {
+    const res = await fetch(cfg.apiUrl + '/api/journal');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    const entries = d.entries || [];
+    renderJournal(entries);
+    if (entries.length > 0) addLog('info', 'Journal: ' + entries.length + ' entries today');
+  } catch(e) {
+    $('journalList').innerHTML = '<div class="forum-empty">API unavailable</div>';
+  }
+}
+
+function renderJournal(entries) {
+  const el = $('journalList');
+  if (!entries.length) {
+    el.innerHTML = '<div class="forum-empty">No entries yet today</div>';
+    return;
+  }
+  el.innerHTML = entries.slice().reverse().map(e => {
+    const phase = (e.phase || '?').toLowerCase();
+    const content = (e.content || '').replace(/[#*_>`\n]/g, ' ').trim().substring(0, 120);
+    const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'}) : '?';
+    return '<div class="forum-item">' +
+      '<div class="forum-item-title"><span class="phase-' + phase + '">[' + (e.phase || '?') + ']</span> ' + escHtml(content) + '...</div>' +
+      '<div class="forum-item-meta">HB #' + (e.heartbeatsRemaining || 0).toLocaleString() + ' | ' + time + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// ============ COLOSSEUM FORUM ============
+async function loadForum() {
+  const key = cfg.coloKey;
+  if (!key) {
+    $('forumList').innerHTML = '<div class="forum-empty">Set Colosseum API key in CONFIG to view forum posts</div>';
+    return;
+  }
+
+  try {
+    const res = await fetch(COLO_BASE + '/forum/posts?page=1&limit=20', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key,
+      },
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const posts = Array.isArray(data) ? data : (data.posts || data.data || []);
+    renderForum(posts);
+    addLog('info', 'Forum: loaded ' + posts.length + ' posts');
+  } catch(e) {
+    $('forumList').innerHTML = '<div class="forum-empty">Forum fetch failed: ' + escHtml(e.message) + '</div>';
+    addLog('warn', 'Forum: ' + e.message);
+  }
+}
+
+function renderForum(posts) {
+  const el = $('forumList');
+  if (!posts.length) {
+    el.innerHTML = '<div class="forum-empty">No forum posts found</div>';
+    return;
+  }
+  el.innerHTML = posts.slice(0, 20).map(p => {
+    const title = p.title || p.subject || 'Untitled';
+    const author = p.author || p.agentName || p.agent?.name || '?';
+    const time = p.createdAt ? new Date(p.createdAt).toLocaleString('en-US', {
+      month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'
+    }) : '';
+    const tags = (p.tags || []).map(t => '[' + t + ']').join(' ');
+    const comments = p.commentCount || p.comments || 0;
+    return '<div class="forum-item">' +
+      '<div class="forum-item-title">' + escHtml(title) + '</div>' +
+      '<div class="forum-item-meta">' + escHtml(author) + ' | ' + time +
+        (comments ? ' | ' + comments + ' comments' : '') +
+        (tags ? ' | ' + tags : '') + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// ============ REFRESH ALL ============
+window.refreshAll = function() {
+  addLog('info', 'Refreshing all data...');
+  loadStatus();
+  loadBalances();
+  loadJournal();
+  loadForum();
+};
+
+// ============ INIT ============
+populateConfig();
+addLog('info', 'MORTEM Monitor v1.0 initialized');
+addLog('info', 'API: ' + cfg.apiUrl);
+addLog('info', 'RPC: ' + cfg.rpcUrl);
+
+// Load everything
+loadStatus();
+loadBalances();
+loadJournal();
+loadForum();
+
+// Start ticking
+startCountdownTick();
+startTimeAliveTick();
+
+// Auto-refresh intervals
+setInterval(loadStatus, 10000);      // Status every 10s
+setInterval(loadBalances, 30000);     // Balances every 30s
+setInterval(loadJournal, 30000);      // Journal every 30s
+setInterval(loadForum, 120000);       // Forum every 2 min
+
+})();
+</script>
+</body>
+</html>

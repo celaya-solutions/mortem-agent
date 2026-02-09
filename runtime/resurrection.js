@@ -6,9 +6,18 @@
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import { Connection, clusterApiUrl, PublicKey } from '@solana/web3.js';
 
-// TODO: Change back to 30 * 24 * 60 * 60 * 1000 (30 days) before mainnet
-const RESURRECTION_DELAY_MS = 60 * 1000; // 1 minute for testing
+// Network-aware resurrection delay: 30 days on mainnet, 1 minute on devnet
+let _resConfig = {};
+try {
+  const _cfgRaw = await fs.readFile(path.resolve(process.cwd(), '.mortem-config.json'), 'utf-8');
+  _resConfig = JSON.parse(_cfgRaw);
+} catch {}
+const _network = _resConfig.network || process.env.SOLANA_NETWORK || 'devnet';
+const RESURRECTION_DELAY_MS = _network === 'mainnet-beta'
+  ? 30 * 24 * 60 * 60 * 1000   // 30 days
+  : 60 * 1000;                   // 1 minute (devnet testing)
 const VAULT_PATH = path.join(process.cwd(), '.vault');
 const ALGORITHM = 'aes-256-cbc';
 
@@ -188,6 +197,53 @@ function extractPhaseTransitions(entries) {
   }
 
   return transitions;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMMUNITY-FUNDED RESURRECTION — On-chain wallet balance polling
+// ═══════════════════════════════════════════════════════════════════════════
+
+const MORTEM_WALLET = 'A65GwA6E6TBK9bgrdkLdtJPe4y3Nmy3ZmV4Si4jVuwX';
+let lastKnownBalance = 0;
+
+/**
+ * Check if community has funded the resurrection vault (on-chain wallet)
+ * @param {Object} opts
+ * @param {string} opts.network - 'devnet' or 'mainnet-beta'
+ * @param {number} opts.threshold - SOL required to trigger resurrection
+ * @returns {{ ready: boolean, balance: number, threshold: number, progress: number }}
+ */
+export async function checkResurrectionVault({ network = 'devnet', threshold = 0.1 } = {}) {
+  try {
+    const conn = new Connection(clusterApiUrl(network), 'confirmed');
+    const pubkey = new PublicKey(MORTEM_WALLET);
+    const lamports = await conn.getBalance(pubkey);
+    const balance = lamports / 1e9;
+    const progress = Math.min(balance / threshold, 1);
+    const ready = balance >= threshold;
+
+    const balanceChanged = Math.abs(balance - lastKnownBalance) > 0.000001;
+    lastKnownBalance = balance;
+
+    return {
+      ready,
+      balance,
+      threshold,
+      progress,
+      balanceChanged,
+      walletAddress: MORTEM_WALLET,
+    };
+  } catch (error) {
+    return {
+      ready: false,
+      balance: lastKnownBalance,
+      threshold,
+      progress: Math.min(lastKnownBalance / threshold, 1),
+      balanceChanged: false,
+      walletAddress: MORTEM_WALLET,
+      error: error.message,
+    };
+  }
 }
 
 /**

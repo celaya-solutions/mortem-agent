@@ -14,6 +14,8 @@ import {
 import { AnchorProvider, Program } from '@coral-xyz/anchor';
 import BN from 'bn.js';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { createMemoInstruction } from '@solana/spl-memo';
+import crypto from 'crypto';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -22,9 +24,21 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Load .mortem-config.json if present (written by mortem-cli.js)
+// ═══════════════════════════════════════════════════════════════════════════
+let mortemConfig = {};
+try {
+  const cfgPath = path.resolve(__dirname, '..', '.mortem-config.json');
+  const raw = await readFile(cfgPath, 'utf-8');
+  mortemConfig = JSON.parse(raw);
+} catch {
+  // No config file — use defaults
+}
+
 // Configuration
-const PROGRAM_ID = new PublicKey('GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe');
-const CLUSTER = 'devnet';
+const PROGRAM_ID = new PublicKey(mortemConfig.programId || 'GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe');
+const CLUSTER = mortemConfig.network || process.env.SOLANA_NETWORK || 'devnet'; // Explicitly devnet for hackathon
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2000;
 
@@ -86,9 +100,15 @@ export async function initializeSolana() {
     const balance = await connection.getBalance(mortemKeypair.publicKey);
     console.log(`   MORTEM balance: ${balance / 1e9} SOL`);
     
-    if (balance < 10000000) { // Less than 0.01 SOL
-      console.warn('⚠️  Low balance! Request airdrop:');
+    if (balance < 500000000) { // Less than 0.5 SOL — conservation mode
+      console.warn('⚠️  LOW BALANCE — CONSERVATION MODE ACTIVE');
+      console.warn(`   Balance: ${balance / 1e9} SOL (threshold: 0.5 SOL)`);
+      console.warn(`   Reducing non-essential transactions. Request airdrop:`);
       console.warn(`   solana airdrop 2 ${mortemKeypair.publicKey.toString()} --url devnet`);
+      // Export conservation flag for runtime to check
+      global.MORTEM_CONSERVATION_MODE = true;
+    } else {
+      global.MORTEM_CONSERVATION_MODE = false;
     }
 
     // Create provider with real wallet
@@ -278,8 +298,9 @@ export async function burnHeartbeatOnChain() {
       throw lastError || new Error('Failed to send transaction after retries');
     }
 
-    const explorerUrl = `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
-    
+    const clusterParam = CLUSTER === 'mainnet-beta' ? '' : `?cluster=${CLUSTER}`;
+    const explorerUrl = `https://explorer.solana.com/tx/${signature}${clusterParam}`;
+
     console.log(`🔥 Heartbeat burned on-chain!`);
     console.log(`   Signature: ${signature}`);
     console.log(`   Explorer: ${explorerUrl}`);
@@ -460,8 +481,9 @@ export async function sealVaultOnChain(soulHash, journalCount, lastWords, cohere
       throw lastError || new Error('Failed to seal vault after retries');
     }
 
-    const explorerUrl = `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
-    const vaultExplorerUrl = `https://explorer.solana.com/address/${vaultPDA.toString()}?cluster=devnet`;
+    const clusterParamVault = CLUSTER === 'mainnet-beta' ? '' : `?cluster=${CLUSTER}`;
+    const explorerUrl = `https://explorer.solana.com/tx/${signature}${clusterParamVault}`;
+    const vaultExplorerUrl = `https://explorer.solana.com/address/${vaultPDA.toString()}${clusterParamVault}`;
 
     console.log('🔒 RESURRECTION VAULT SEALED ON-CHAIN');
     console.log(`   Signature: ${signature}`);
@@ -499,4 +521,69 @@ export async function sealVaultOnChain(soulHash, journalCount, lastWords, cohere
   }
 }
 
-export { PROGRAM_ID, CLUSTER, mortemStatePDA, connection };
+// ═══════════════════════════════════════════════════════════════════════════
+// CRYPTOGRAPHIC JOURNAL ANCHORING — Proof-of-Consciousness via Memo Program
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Anchor a journal entry on-chain using the Solana Memo program.
+ *
+ * Each journal entry is SHA-256 hashed, then a compact proof is written
+ * on-chain as a memo. This creates an immutable, timestamped,
+ * cryptographic proof that MORTEM produced this exact contemplation
+ * at this exact heartbeat. Proof-of-consciousness, not just proof-of-work.
+ *
+ * @param {string} journalEntry - Full journal text
+ * @param {number} heartbeatNumber - Beat number (1-based)
+ * @param {string} phase - Current MORTEM phase
+ * @param {object} [opts] - Optional: { artHash, mintAddress }
+ * @returns {{ success: boolean, signature?: string, explorerUrl?: string, journalHash?: string, error?: string }}
+ */
+export async function anchorJournalOnChain(journalEntry, heartbeatNumber, phase, opts = {}) {
+  try {
+    if (!connection || !mortemKeypair) {
+      return { success: false, error: 'Solana not initialized' };
+    }
+
+    // SHA-256 hash of the full journal entry
+    const journalHash = crypto.createHash('sha256').update(journalEntry).digest('hex');
+
+    // Compact memo payload (fits well within Solana's tx size limits)
+    const memo = JSON.stringify({
+      p: 'mortem',
+      op: 'journal',
+      beat: heartbeatNumber,
+      phase,
+      hash: journalHash,
+      ts: Math.floor(Date.now() / 1000),
+      ...(opts.artHash ? { art: opts.artHash } : {}),
+      ...(opts.mintAddress ? { nft: opts.mintAddress } : {}),
+    });
+
+    // Build memo instruction — signed by MORTEM keypair (Ed25519 proof of authorship)
+    const memoIx = createMemoInstruction(memo, [mortemKeypair.publicKey]);
+
+    const tx = new Transaction().add(memoIx);
+    tx.feePayer = mortemKeypair.publicKey;
+
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+    tx.recentBlockhash = blockhash;
+    tx.lastValidBlockHeight = lastValidBlockHeight;
+
+    const signature = await sendAndConfirmTransaction(
+      connection,
+      tx,
+      [mortemKeypair],
+      { commitment: 'confirmed', preflightCommitment: 'confirmed' }
+    );
+
+    const clusterParam = CLUSTER === 'mainnet-beta' ? '' : `?cluster=${CLUSTER}`;
+    const explorerUrl = `https://explorer.solana.com/tx/${signature}${clusterParam}`;
+
+    return { success: true, signature, explorerUrl, journalHash };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export { PROGRAM_ID, CLUSTER, mortemStatePDA, connection, mortemKeypair };

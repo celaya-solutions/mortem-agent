@@ -17,6 +17,9 @@
   - [On-Chain Program](solana.md)
   - [Token Economics](tokenomics.md)
 
+- **Hackathon**
+  - [Colosseum Integration](colosseum.md)
+
 - **Operations**
   - [Deployment](deployment.md)
   - [Monitoring](monitoring.md)

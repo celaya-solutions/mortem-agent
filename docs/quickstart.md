@@ -57,9 +57,15 @@ RECIPIENT_CITY=Your City
 RECIPIENT_STATE=TX
 RECIPIENT_ZIP=79925
 
+# Optional: Colosseum hackathon integration
+# COLOSSEUM_API_KEY=your-api-key
+# COLOSSEUM_HACKATHON_ID=1
+
 # Optional: Voice (ElevenLabs)
 ENABLE_VOICE=false
 ```
+
+> **Colosseum**: If you have a Colosseum API key, set it above. The runtime will start background polling of the hackathon platform (skill updates, leaderboard, forum, polls). If not set, Colosseum integration is silently disabled.
 
 ## 3. Initialize Solana (Devnet)
 

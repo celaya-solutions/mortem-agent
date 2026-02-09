@@ -4,7 +4,7 @@ import {
   Commitment,
   clusterApiUrl,
 } from "@solana/web3.js";
-import { Idl, BorshAccountsCoder } from "@coral-xyz/anchor";
+import { BorshAccountsCoder } from "@coral-xyz/anchor";
 import {
   MortemState,
   VaultState,
@@ -21,7 +21,8 @@ const TOTAL_HEARTBEATS = 86_400;
 const DEFAULT_POLL_INTERVAL_MS = 60_000; // 1 minute
 
 // Minimal IDL for account deserialization — we only read, never write.
-const MORTEM_IDL: Idl = {
+// Using 'any' since Anchor 0.30 IDL type is stricter than what we need.
+const MORTEM_IDL: any = {
   version: "0.1.0",
   name: "heartbeat_token",
   address: DEFAULT_PROGRAM_ID,

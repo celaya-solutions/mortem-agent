@@ -17,6 +17,8 @@ memory/
 .env.*
 *.keypair
 *.json.bak
+.colosseum-credentials.json
+.colosseum-skill.md
 
 # OS
 .DS_Store

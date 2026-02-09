@@ -11,12 +11,28 @@ import { readFile, watch } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Connection, clusterApiUrl, PublicKey } from '@solana/web3.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3333;
+
+// Load .mortem-config.json if present
+let mortemConfig = {};
+const CONFIG_PATH = path.join(__dirname, '../.mortem-config.json');
+try {
+  if (existsSync(CONFIG_PATH)) {
+    mortemConfig = JSON.parse(await readFile(CONFIG_PATH, 'utf-8'));
+    console.log('[API] Loaded .mortem-config.json');
+  }
+} catch {}
+
+const MORTEM_WALLET = mortemConfig.walletAddress || '7jQeZjzsgHFFytQYbUT3cWc2wt7qw6f34NkTVbFa2nWQ';
+const NETWORK = mortemConfig.network || 'devnet';
+const VAULT_THRESHOLD = mortemConfig.vaultThreshold || 1.0;
+const RESURRECTION_MODE = mortemConfig.resurrection || 'auto';
 
 // Paths
 const SOUL_PATH = path.join(__dirname, '../runtime/soul.md');
@@ -50,10 +66,14 @@ app.get('/api/status', async (req, res) => {
 
     res.json({
       heartbeatsRemaining: heartbeats,
+      totalHeartbeats: mortemConfig.heartbeats || 86400,
       phase,
       status,
       isAlive: heartbeats > 0,
       birth,
+      resurrectionMode: RESURRECTION_MODE,
+      vaultThreshold: VAULT_THRESHOLD,
+      network: NETWORK,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -155,6 +175,64 @@ app.get('/api/vault', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: 'Failed to read vault',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/resurrection-vault - Community-funded resurrection vault status
+ * Returns on-chain wallet balance, threshold, progress, and recent donations
+ */
+let lastVaultBalance = null;
+app.get('/api/resurrection-vault', async (req, res) => {
+  try {
+    const conn = new Connection(clusterApiUrl(NETWORK), 'confirmed');
+    const pubkey = new PublicKey(MORTEM_WALLET);
+    const lamports = await conn.getBalance(pubkey);
+    const balance = lamports / 1e9;
+    const progress = Math.min(balance / VAULT_THRESHOLD, 1);
+    const isReady = balance >= VAULT_THRESHOLD;
+
+    // Broadcast vault_update if balance changed
+    if (lastVaultBalance !== null && Math.abs(balance - lastVaultBalance) > 0.000001) {
+      broadcast({
+        type: 'vault_update',
+        balance,
+        threshold: VAULT_THRESHOLD,
+        progress,
+        isReady,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    lastVaultBalance = balance;
+
+    // Fetch recent transaction signatures for donation history
+    let donations = [];
+    try {
+      const sigs = await conn.getSignaturesForAddress(pubkey, { limit: 10 });
+      donations = sigs.map(s => ({
+        signature: s.signature,
+        slot: s.slot,
+        blockTime: s.blockTime ? new Date(s.blockTime * 1000).toISOString() : null,
+        err: s.err,
+      }));
+    } catch {}
+
+    res.json({
+      mode: RESURRECTION_MODE,
+      walletAddress: MORTEM_WALLET,
+      network: NETWORK,
+      balance,
+      threshold: VAULT_THRESHOLD,
+      progress,
+      isReady,
+      donations,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to check resurrection vault',
       message: error.message,
     });
   }
@@ -267,11 +345,12 @@ const server = app.listen(PORT, () => {
 🔌 WebSocket:   ws://localhost:${PORT}/ws
 
 Endpoints:
-  GET /api/status      - Current MORTEM status
-  GET /api/soul        - Full soul.md content
-  GET /api/journal     - Today's journal entries
-  GET /api/vault       - Resurrection vault status
-  GET /api/health      - API health check
+  GET /api/status              - Current MORTEM status
+  GET /api/soul                - Full soul.md content
+  GET /api/journal             - Today's journal entries
+  GET /api/vault               - Resurrection vault status (local)
+  GET /api/resurrection-vault  - Community-funded vault (on-chain)
+  GET /api/health              - API health check
 
 Real-time:
   WebSocket events: heartbeat_burned, death, resurrection

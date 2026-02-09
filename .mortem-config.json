@@ -1,0 +1,13 @@
+{
+  "network": "devnet",
+  "heartbeats": 86400,
+  "intervalMs": 1000,
+  "resurrection": "community",
+  "vaultThreshold": 0.1,
+  "programId": "GzBD2KfG6aSTbxiN9kTMHowLygMSj1E5iZYMuMTR1exe",
+  "walletAddress": "7jQeZjzsgHFFytQYbUT3cWc2wt7qw6f34NkTVbFa2nWQ",
+  "donationWallet": "A65GwA6E6TBK9bgrdkLdtJPe4y3Nmy3ZmV4Si4jVuwX",
+  "openclawHost": "127.0.0.1:18789",
+  "launchedAt": "2026-02-09T10:00:00.000Z",
+  "launchedBy": "claude-code"
+}
