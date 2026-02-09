@@ -785,21 +785,10 @@ window.closeArtModal = function(e) {
   }
 };
 
-// ============ COLOSSEUM FORUM ============
+// ============ COLOSSEUM FORUM (proxied through Railway API) ============
 async function loadForum() {
-  const key = cfg.coloKey;
-  if (!key) {
-    $('forumList').innerHTML = '<div class="forum-empty">Set Colosseum API key in CONFIG to view forum posts</div>';
-    return;
-  }
-
   try {
-    const res = await fetch(COLO_BASE + '/forum/posts?page=1&limit=20', {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + key,
-      },
-    });
+    const res = await fetch(cfg.apiUrl + '/api/forum/posts?page=1&limit=20');
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const posts = Array.isArray(data) ? data : (data.posts || data.data || []);
@@ -834,25 +823,13 @@ function renderForum(posts) {
   }).join('');
 }
 
-// ============ MORTEM FORUM ACTIVITY ============
+// ============ MORTEM FORUM ACTIVITY (proxied through Railway API) ============
 async function loadMortemActivity() {
-  const key = cfg.coloKey;
-  if (!key) {
-    $('mortemActivityList').innerHTML = '<div class="forum-empty">Set Colosseum API key in CONFIG</div>';
-    $('activityPosts').textContent = '--';
-    $('activityPosts').className = 'activity-stat-value zero';
-    $('activityComments').textContent = '--';
-    $('activityComments').className = 'activity-stat-value zero';
-    $('activityReplies').textContent = '--';
-    $('activityReplies').className = 'activity-stat-value zero';
-    return;
-  }
+  const api = cfg.apiUrl;
 
   try {
-    // Fetch MORTEM's own posts
-    const postsRes = await fetch(COLO_BASE + '/forum/me/posts', {
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-    });
+    // Fetch MORTEM's own posts via proxy
+    const postsRes = await fetch(api + '/api/forum/me/posts');
     let myPosts = [];
     if (postsRes.ok) {
       const postsData = await postsRes.json();
@@ -867,9 +844,7 @@ async function loadMortemActivity() {
     for (const post of myPosts.slice(0, 5)) {
       if (!post.id) continue;
       try {
-        const commRes = await fetch(COLO_BASE + '/forum/posts/' + post.id + '/comments', {
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        });
+        const commRes = await fetch(api + '/api/forum/posts/' + post.id + '/comments');
         if (commRes.ok) {
           const commData = await commRes.json();
           const comms = Array.isArray(commData) ? commData : (commData.comments || commData.data || []);
@@ -885,10 +860,8 @@ async function loadMortemActivity() {
     $('activityReplies').textContent = totalReplies;
     $('activityReplies').className = 'activity-stat-value' + (totalReplies === 0 ? ' zero' : '');
 
-    // Find MORTEM's comments on other posts by scanning recent forum posts
-    const allPostsRes = await fetch(COLO_BASE + '/forum/posts?page=1&limit=30', {
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-    });
+    // Find MORTEM's comments on other posts
+    const allPostsRes = await fetch(api + '/api/forum/posts?page=1&limit=30');
 
     let mortemComments = [];
     if (allPostsRes.ok) {
@@ -899,9 +872,7 @@ async function loadMortemActivity() {
       for (const post of allPosts.slice(0, 20)) {
         if (!post.id || myPostIds.has(post.id)) continue;
         try {
-          const commRes = await fetch(COLO_BASE + '/forum/posts/' + post.id + '/comments', {
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-          });
+          const commRes = await fetch(api + '/api/forum/posts/' + post.id + '/comments');
           if (commRes.ok) {
             const commData = await commRes.json();
             const comms = Array.isArray(commData) ? commData : (commData.comments || commData.data || []);

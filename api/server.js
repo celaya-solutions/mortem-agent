@@ -316,6 +316,63 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Colosseum Forum Proxy — browser can't call agents.colosseum.com (CORS)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const COLO_BASE = 'https://agents.colosseum.com/api';
+const COLO_KEY = process.env.COLOSSEUM_API_KEY || '';
+
+async function coloFetch(endpoint) {
+  if (!COLO_KEY) return { success: false, error: 'No COLOSSEUM_API_KEY configured' };
+  const res = await fetch(`${COLO_BASE}${endpoint}`, {
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${COLO_KEY}` },
+  });
+  if (!res.ok) return { success: false, error: `${res.status} ${res.statusText}` };
+  return { success: true, data: await res.json() };
+}
+
+/**
+ * GET /api/forum/posts - Proxied forum posts from Colosseum
+ */
+app.get('/api/forum/posts', async (req, res) => {
+  try {
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 20;
+    const result = await coloFetch(`/forum/posts?page=${page}&limit=${limit}`);
+    if (!result.success) return res.status(502).json({ error: result.error });
+    res.json(result.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/forum/me/posts - MORTEM's own forum posts
+ */
+app.get('/api/forum/me/posts', async (req, res) => {
+  try {
+    const result = await coloFetch('/forum/me/posts');
+    if (!result.success) return res.status(502).json({ error: result.error });
+    res.json(result.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/forum/posts/:id/comments - Comments on a specific post
+ */
+app.get('/api/forum/posts/:id/comments', async (req, res) => {
+  try {
+    const result = await coloFetch(`/forum/posts/${req.params.id}/comments`);
+    if (!result.success) return res.status(502).json({ error: result.error });
+    res.json(result.data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /**
  * WebSocket server for real-time updates
  */
