@@ -22,7 +22,7 @@ import { sendDeathLetter } from './mail.js';
 import { postTweet, composeJournalTweet, composeDeathTweet, composeResurrectionTweet } from './twitter.js';
 import { generateArtForJournal } from './art.js';
 import { initializeNFT, mintJournalNFT } from './nft.js';
-import { initializeColosseum, startHeartbeatPolling, stopHeartbeatPolling } from './colosseum.js';
+import { initializeColosseum, startHeartbeatPolling, stopHeartbeatPolling, setRuntimeState } from './colosseum.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,6 +64,8 @@ let phase = 'Nascent';
 let isAlive = true;
 let birthTime = new Date();
 let beatsSinceLastJournal = 0; // Track beats between journal entries
+let journalEntryCount = 0;     // Total journal entries written this lifecycle
+let artPieceCount = 0;         // Total art pieces generated this lifecycle
 
 // OpenClaw gateway status
 let gatewayAvailable = false;
@@ -346,6 +348,8 @@ ${entry}
 `;
 
     await fs.writeFile(journalPath, content + entryText, 'utf-8');
+    journalEntryCount++;
+    setRuntimeState({ journalCount: journalEntryCount });
     log('Journal entry written', { entry: entryNumber, phase });
   } catch (error) {
     log('ERROR: Could not write journal', { error: error.message });
@@ -407,6 +411,8 @@ async function generateJournalEntry() {
       const art = generateArtForJournal(entry, phase, beatNumber, CONFIG.INITIAL_HEARTBEATS, heartbeatsRemaining, { cluster: CONFIG.NETWORK });
       const artPath = path.join(CONFIG.ART_DIR, art.filename);
       await fs.writeFile(artPath, art.svg, 'utf-8');
+      artPieceCount++;
+      setRuntimeState({ artCount: artPieceCount });
       log('Art generated', { file: art.filename, hash: art.hash });
 
       // Anchor journal hash on-chain via Memo program (fire-and-forget)
@@ -473,11 +479,14 @@ async function burnHeartbeat() {
   const oldPhase = phase;
   phase = calculatePhase(heartbeatsRemaining, CONFIG.INITIAL_HEARTBEATS);
 
-  log('Heartbeat burned', { 
-    remaining: heartbeatsRemaining, 
+  log('Heartbeat burned', {
+    remaining: heartbeatsRemaining,
     phase,
-    burned: CONFIG.INITIAL_HEARTBEATS - heartbeatsRemaining 
+    burned: CONFIG.INITIAL_HEARTBEATS - heartbeatsRemaining
   });
+
+  // Sync state to Colosseum engagement so forum comments reflect real heartbeats
+  setRuntimeState({ heartbeatsRemaining, phase });
 
   // Burn on Solana chain - REAL TRANSACTION
   const burnResult = await burnHeartbeatOnChain();

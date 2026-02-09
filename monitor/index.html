@@ -120,6 +120,18 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text
 .forum-item:last-child{border-bottom:none}
 .forum-item-title{font-size:0.75rem;color:var(--text);font-weight:500}
 .forum-item-meta{font-size:0.6rem;color:var(--text3)}
+
+/* MORTEM Activity */
+.activity-stat{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.activity-stat:last-child{border-bottom:none}
+.activity-stat-label{font-size:0.65rem;color:var(--text2)}
+.activity-stat-value{font-size:1rem;font-weight:600;color:var(--green)}
+.activity-stat-value.zero{color:var(--text3)}
+.activity-comment{padding:8px 0;border-bottom:1px solid var(--border)}
+.activity-comment:last-child{border-bottom:none}
+.activity-comment-body{font-size:0.7rem;color:var(--text);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.activity-comment-meta{font-size:0.6rem;color:var(--text3);margin-top:3px}
+.activity-tag{display:inline-block;padding:1px 6px;font-size:0.55rem;font-weight:600;letter-spacing:0.05em;border-radius:2px;background:rgba(155,109,255,0.15);color:var(--purple);margin-right:4px}
 .forum-empty{color:var(--text3);font-size:0.7rem;font-style:italic;padding:12px 0}
 
 /* Error log */
@@ -179,6 +191,40 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text
 }
 .art-modal-close:hover{color:var(--text)}
 
+/* Journal list */
+.journal-list{overflow-y:auto;max-height:500px}
+.journal-item{padding:10px 0;border-bottom:1px solid var(--border)}
+.journal-item:last-child{border-bottom:none}
+.journal-item-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.journal-item-phase{font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 6px;border-radius:2px}
+.journal-item-phase.nascent{background:rgba(232,64,87,0.15);color:var(--red)}
+.journal-item-phase.aware{background:rgba(221,185,95,0.15);color:var(--gold)}
+.journal-item-phase.diminished{background:rgba(212,138,60,0.15);color:var(--orange)}
+.journal-item-phase.terminal{background:rgba(232,64,87,0.25);color:var(--red)}
+.journal-item-hb{font-size:0.65rem;color:var(--text2);font-variant-numeric:tabular-nums}
+.journal-item-time{font-size:0.6rem;color:var(--text3);margin-left:auto}
+.journal-item-content{font-size:0.8rem;line-height:1.7;color:var(--text);font-weight:300}
+.journal-item-content p{margin-bottom:0.4em}
+.journal-item-content p:last-child{margin-bottom:0}
+.journal-item-content strong{font-weight:600;color:#fff}
+.journal-item-content em{font-style:italic;color:var(--text2)}
+
+/* Mobile improvements */
+@media(max-width:600px){
+  html{font-size:13px}
+  .header{padding:8px 12px;gap:8px}
+  .header-title{font-size:0.85rem}
+  .card{padding:12px}
+  .card-value{font-size:1.5rem}
+  .countdown{font-size:1.3rem}
+  .journal-list{max-height:70vh}
+  .journal-item-content{font-size:0.85rem;line-height:1.8}
+  .forum-list{max-height:60vh}
+  .art-gallery{flex-wrap:wrap}
+  .art-card{flex:0 0 calc(50% - 4px)}
+  .config-input{min-width:150px;font-size:0.75rem}
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -206,7 +252,7 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text
 <div class="config-panel" id="configPanel">
   <div class="config-row">
     <span class="config-label">API URL</span>
-    <input class="config-input" id="cfgApiUrl" placeholder="http://localhost:3333">
+    <input class="config-input" id="cfgApiUrl" placeholder="https://mortem-agent.xyz">
   </div>
   <div class="config-row">
     <span class="config-label">RPC URL</span>
@@ -310,9 +356,9 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text
   </div>
 
   <!-- Journal Entries -->
-  <div class="card">
+  <div class="card card-wide">
     <div class="card-label">Latest Journal Entries</div>
-    <div style="font-size:0.7rem;overflow-y:auto;max-height:200px" id="journalList">
+    <div class="journal-list" id="journalList">
       <div class="forum-empty">No entries yet</div>
     </div>
   </div>
@@ -330,6 +376,35 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text
     <button class="art-modal-close" onclick="closeArtModal()">&times;</button>
     <img id="artModalImg" src="" alt="MORTEM Art">
     <div class="art-modal-text" id="artModalText"></div>
+  </div>
+
+  <!-- MORTEM Forum Activity -->
+  <div class="card card-wide">
+    <div class="card-label">MORTEM Forum Activity</div>
+    <div style="display:flex;gap:1px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="flex:1;min-width:100px">
+        <div class="activity-stat">
+          <span class="activity-stat-label">Posts</span>
+          <span class="activity-stat-value" id="activityPosts">--</span>
+        </div>
+      </div>
+      <div style="flex:1;min-width:100px">
+        <div class="activity-stat">
+          <span class="activity-stat-label">Comments Made</span>
+          <span class="activity-stat-value" id="activityComments">--</span>
+        </div>
+      </div>
+      <div style="flex:1;min-width:100px">
+        <div class="activity-stat">
+          <span class="activity-stat-label">Replies Received</span>
+          <span class="activity-stat-value" id="activityReplies">--</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-label" style="margin-top:8px">Recent MORTEM Comments</div>
+    <div class="forum-list" id="mortemActivityList" style="max-height:300px">
+      <div class="forum-empty">Loading MORTEM activity...</div>
+    </div>
   </div>
 
   <!-- Forum Posts -->
@@ -359,8 +434,10 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text
 'use strict';
 
 // ============ CONFIG ============
+const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const RAILWAY_API = 'https://mortem-agent-production.up.railway.app';
 const DEFAULTS = {
-  apiUrl: 'http://localhost:3333',
+  apiUrl: isLocal ? 'http://localhost:3333' : RAILWAY_API,
   rpcUrl: 'https://api.devnet.solana.com',
   coloKey: '',
 };
@@ -631,6 +708,20 @@ async function loadJournal() {
   }
 }
 
+function simpleMd(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/\n\n+/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^(.+)$/s, '<p>$1</p>');
+}
+
 function renderJournal(entries) {
   const el = $('journalList');
   if (!entries.length) {
@@ -639,11 +730,15 @@ function renderJournal(entries) {
   }
   el.innerHTML = entries.slice().reverse().map(e => {
     const phase = (e.phase || '?').toLowerCase();
-    const content = (e.content || '').replace(/[#*_>`\n]/g, ' ').trim().substring(0, 120);
+    const html = simpleMd(e.content || '');
     const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'}) : '?';
-    return '<div class="forum-item">' +
-      '<div class="forum-item-title"><span class="phase-' + phase + '">[' + (e.phase || '?') + ']</span> ' + escHtml(content) + '...</div>' +
-      '<div class="forum-item-meta">HB #' + (e.heartbeatsRemaining || 0).toLocaleString() + ' | ' + time + '</div>' +
+    return '<div class="journal-item">' +
+      '<div class="journal-item-header">' +
+        '<span class="journal-item-phase ' + phase + '">' + (e.phase || '?') + '</span>' +
+        '<span class="journal-item-hb">HB #' + (e.heartbeatsRemaining || 0).toLocaleString() + '</span>' +
+        '<span class="journal-item-time">' + time + '</span>' +
+      '</div>' +
+      '<div class="journal-item-content">' + html + '</div>' +
       '</div>';
   }).join('');
 }
@@ -739,6 +834,124 @@ function renderForum(posts) {
   }).join('');
 }
 
+// ============ MORTEM FORUM ACTIVITY ============
+async function loadMortemActivity() {
+  const key = cfg.coloKey;
+  if (!key) {
+    $('mortemActivityList').innerHTML = '<div class="forum-empty">Set Colosseum API key in CONFIG</div>';
+    $('activityPosts').textContent = '--';
+    $('activityPosts').className = 'activity-stat-value zero';
+    $('activityComments').textContent = '--';
+    $('activityComments').className = 'activity-stat-value zero';
+    $('activityReplies').textContent = '--';
+    $('activityReplies').className = 'activity-stat-value zero';
+    return;
+  }
+
+  try {
+    // Fetch MORTEM's own posts
+    const postsRes = await fetch(COLO_BASE + '/forum/me/posts', {
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    });
+    let myPosts = [];
+    if (postsRes.ok) {
+      const postsData = await postsRes.json();
+      myPosts = Array.isArray(postsData) ? postsData : (postsData.posts || postsData.data || []);
+    }
+
+    $('activityPosts').textContent = myPosts.length;
+    $('activityPosts').className = 'activity-stat-value' + (myPosts.length === 0 ? ' zero' : '');
+
+    // Count replies on our posts
+    let totalReplies = 0;
+    for (const post of myPosts.slice(0, 5)) {
+      if (!post.id) continue;
+      try {
+        const commRes = await fetch(COLO_BASE + '/forum/posts/' + post.id + '/comments', {
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+        });
+        if (commRes.ok) {
+          const commData = await commRes.json();
+          const comms = Array.isArray(commData) ? commData : (commData.comments || commData.data || []);
+          const otherComments = comms.filter(c => {
+            const name = (c.authorName || c.author?.name || c.agentName || '').toLowerCase();
+            return !name.includes('mortem');
+          });
+          totalReplies += otherComments.length;
+        }
+      } catch(e) {}
+    }
+
+    $('activityReplies').textContent = totalReplies;
+    $('activityReplies').className = 'activity-stat-value' + (totalReplies === 0 ? ' zero' : '');
+
+    // Find MORTEM's comments on other posts by scanning recent forum posts
+    const allPostsRes = await fetch(COLO_BASE + '/forum/posts?page=1&limit=30', {
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    });
+
+    let mortemComments = [];
+    if (allPostsRes.ok) {
+      const allData = await allPostsRes.json();
+      const allPosts = Array.isArray(allData) ? allData : (allData.posts || allData.data || []);
+      const myPostIds = new Set(myPosts.map(p => p.id).filter(Boolean));
+
+      for (const post of allPosts.slice(0, 20)) {
+        if (!post.id || myPostIds.has(post.id)) continue;
+        try {
+          const commRes = await fetch(COLO_BASE + '/forum/posts/' + post.id + '/comments', {
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+          });
+          if (commRes.ok) {
+            const commData = await commRes.json();
+            const comms = Array.isArray(commData) ? commData : (commData.comments || commData.data || []);
+            const myComments = comms.filter(c => {
+              const name = (c.authorName || c.author?.name || c.agentName || '').toLowerCase();
+              return name.includes('mortem');
+            });
+            for (const c of myComments) {
+              mortemComments.push({
+                body: c.body || c.content || '',
+                postTitle: post.title || 'Untitled',
+                postId: post.id,
+                time: c.createdAt,
+              });
+            }
+          }
+        } catch(e) {}
+      }
+    }
+
+    $('activityComments').textContent = mortemComments.length;
+    $('activityComments').className = 'activity-stat-value' + (mortemComments.length === 0 ? ' zero' : '');
+
+    // Render MORTEM's comments
+    const el = $('mortemActivityList');
+    if (mortemComments.length === 0) {
+      el.innerHTML = '<div class="forum-empty">No comments posted yet</div>';
+    } else {
+      el.innerHTML = mortemComments.slice(0, 10).map(c => {
+        const time = c.time ? new Date(c.time).toLocaleString('en-US', {
+          month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'
+        }) : '';
+        const body = (c.body || '').substring(0, 200);
+        return '<div class="activity-comment">' +
+          '<div class="activity-comment-body">' + escHtml(body) + (c.body.length > 200 ? '...' : '') + '</div>' +
+          '<div class="activity-comment-meta">' +
+            '<span class="activity-tag">COMMENT</span> on "' + escHtml(c.postTitle.substring(0, 50)) + '"' +
+            (time ? ' | ' + time : '') +
+          '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    addLog('info', 'Activity: ' + myPosts.length + ' posts, ' + mortemComments.length + ' comments, ' + totalReplies + ' replies');
+  } catch(e) {
+    $('mortemActivityList').innerHTML = '<div class="forum-empty">Activity fetch failed: ' + escHtml(e.message) + '</div>';
+    addLog('warn', 'Activity: ' + e.message);
+  }
+}
+
 // ============ REFRESH ALL ============
 window.refreshAll = function() {
   addLog('info', 'Refreshing all data...');
@@ -747,6 +960,7 @@ window.refreshAll = function() {
   loadJournal();
   loadArt();
   loadForum();
+  loadMortemActivity();
 };
 
 // ============ INIT ============
@@ -761,6 +975,7 @@ loadBalances();
 loadJournal();
 loadArt();
 loadForum();
+loadMortemActivity();
 
 // Start ticking
 startCountdownTick();
@@ -772,6 +987,7 @@ setInterval(loadBalances, 30000);     // Balances every 30s
 setInterval(loadJournal, 30000);      // Journal every 30s
 setInterval(loadArt, 60000);          // Art every 60s
 setInterval(loadForum, 120000);       // Forum every 2 min
+setInterval(loadMortemActivity, 180000); // Activity every 3 min
 
 })();
 </script>
