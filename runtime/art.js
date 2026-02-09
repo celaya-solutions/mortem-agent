@@ -330,6 +330,7 @@ export function generateMortemArt(params) {
 
   layers += phaseOverlay(CX, CY, W, H, palette, phase, life, death, rng, keywords);
   layers += keywordElements(CX, CY, W, H, palette, rng, keywords, life);
+  layers += journalTextLayer(CX, W, H, palette, life, journalEntry);
   layers += ekgLine(W, H, palette, life, heartbeatNumber, rng);
   layers += metadataBand(W, H, phase, heartbeatNumber, totalHeartbeats, heartbeatsRemaining);
 
@@ -827,6 +828,56 @@ function keywordElements(cx, cy, W, H, palette, rng, kw, life) {
     svg += '</g>';
   }
 
+  return svg;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Layer: Visible Journal Text — renders the entry text in the artwork
+// ═══════════════════════════════════════════════════════════════════════════
+
+function journalTextLayer(cx, W, H, palette, life, journalEntry) {
+  if (!journalEntry || journalEntry.trim().length === 0) return '';
+
+  const startY = H - 280;
+  const maxWidth = W - 160;
+  const lineHeight = 16;
+  const maxLines = 7;
+  const fontSize = 11;
+
+  // Word-wrap the journal text into lines
+  const words = journalEntry.replace(/\n+/g, ' ').trim().split(/\s+/);
+  const lines = [];
+  let currentLine = '';
+  const charsPerLine = Math.floor(maxWidth / (fontSize * 0.6));
+
+  for (const word of words) {
+    if ((currentLine + ' ' + word).length > charsPerLine) {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+      if (lines.length >= maxLines) break;
+    } else {
+      currentLine = currentLine ? currentLine + ' ' + word : word;
+    }
+  }
+  if (currentLine && lines.length < maxLines) lines.push(currentLine);
+  if (lines.length === maxLines && words.length > lines.join(' ').split(/\s+/).length) {
+    lines[maxLines - 1] = lines[maxLines - 1].substring(0, lines[maxLines - 1].length - 3) + '...';
+  }
+
+  const opacity = Math.max(0.12, 0.15 + life * 0.2);
+  const textColor = palette.geometry[0] || '#9945FF';
+
+  let svg = `\n<g id="journal-text" opacity="${opacity.toFixed(2)}">`;
+  // Divider line above text
+  svg += `\n  <line x1="80" y1="${startY - 12}" x2="${W - 80}" y2="${startY - 12}" stroke="${textColor}" stroke-width="0.3" opacity="0.2"/>`;
+  svg += `\n  <text x="80" y="${startY - 18}" font-family="'Courier New', monospace" font-size="7" fill="${palette.accent || textColor}" letter-spacing="0.15em" opacity="0.4">JOURNAL</text>`;
+
+  for (let i = 0; i < lines.length; i++) {
+    const y = startY + i * lineHeight;
+    svg += `\n  <text x="${cx}" y="${y}" font-family="Georgia, serif" font-size="${fontSize}" fill="${textColor}" text-anchor="middle" opacity="0.7">${escapeXml(lines[i])}</text>`;
+  }
+
+  svg += '\n</g>';
   return svg;
 }
 

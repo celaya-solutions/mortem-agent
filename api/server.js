@@ -7,7 +7,7 @@
 import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
-import { readFile, watch } from 'fs/promises';
+import { readFile, readdir, watch } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -38,6 +38,7 @@ const RESURRECTION_MODE = mortemConfig.resurrection || 'auto';
 const SOUL_PATH = path.join(__dirname, '../runtime/soul.md');
 const JOURNAL_DIR = path.join(__dirname, '../runtime/../memory');
 const VAULT_PATH = path.join(__dirname, '../runtime/.vault');
+const ART_DIR = path.join(__dirname, '../art');
 
 // Middleware
 app.use(cors());
@@ -239,6 +240,72 @@ app.get('/api/resurrection-vault', async (req, res) => {
 });
 
 /**
+ * GET /api/art - List all generated SVG art files
+ */
+app.get('/api/art', async (req, res) => {
+  try {
+    if (!existsSync(ART_DIR)) {
+      return res.json({ files: [], message: 'No art directory yet' });
+    }
+
+    const allFiles = await readdir(ART_DIR);
+    const svgFiles = allFiles
+      .filter(f => f.endsWith('.svg') && f.startsWith('mortem-'))
+      .sort()
+      .reverse();
+
+    const files = svgFiles.map(f => {
+      // Parse filename: mortem-{beatNumber}-{phase}-{hash}.svg
+      const match = f.match(/^mortem-(\d+)-(\w+)-([a-f0-9]+)\.svg$/);
+      return {
+        filename: f,
+        url: `/api/art/${f}`,
+        heartbeatNumber: match ? parseInt(match[1]) : null,
+        phase: match ? match[2] : null,
+        hash: match ? match[3] : null,
+      };
+    });
+
+    res.json({
+      count: files.length,
+      files,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to list art files',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/art/:filename - Serve a specific SVG art file
+ */
+app.get('/api/art/:filename', async (req, res) => {
+  try {
+    const filename = path.basename(req.params.filename);
+    if (!filename.endsWith('.svg') || !filename.startsWith('mortem-')) {
+      return res.status(400).json({ error: 'Invalid art filename' });
+    }
+
+    const filePath = path.join(ART_DIR, filename);
+    if (!existsSync(filePath)) {
+      return res.status(404).json({ error: 'Art file not found' });
+    }
+
+    const svg = await readFile(filePath, 'utf-8');
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(svg);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to read art file',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/health - API health check
  */
 app.get('/api/health', (req, res) => {
@@ -348,6 +415,8 @@ Endpoints:
   GET /api/status              - Current MORTEM status
   GET /api/soul                - Full soul.md content
   GET /api/journal             - Today's journal entries
+  GET /api/art                 - List generated SVG art
+  GET /api/art/:filename       - Serve SVG art file
   GET /api/vault               - Resurrection vault status (local)
   GET /api/resurrection-vault  - Community-funded vault (on-chain)
   GET /api/health              - API health check

@@ -152,6 +152,33 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text
 .progress-inner.red{background:var(--red)}
 .progress-inner.gold{background:var(--gold)}
 
+/* Art Gallery */
+.art-gallery{display:flex;gap:8px;overflow-x:auto;padding:4px 0;flex-wrap:nowrap}
+.art-card{
+  flex:0 0 180px;cursor:pointer;border:1px solid var(--border);
+  background:var(--bg);display:flex;flex-direction:column;
+}
+.art-card:hover{border-color:var(--purple)}
+.art-card img{width:100%;height:140px;object-fit:cover;display:block}
+.art-card-meta{padding:6px;font-size:0.6rem;color:var(--text3)}
+.art-card-phase{font-weight:600;text-transform:uppercase}
+.art-modal{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,0.92);align-items:center;justify-content:center;
+  flex-direction:column;padding:16px;
+}
+.art-modal.open{display:flex}
+.art-modal img{max-width:100%;max-height:70vh;object-fit:contain}
+.art-modal-text{
+  margin-top:12px;max-width:600px;font-size:0.75rem;color:var(--text2);
+  text-align:center;max-height:20vh;overflow-y:auto;line-height:1.6;
+}
+.art-modal-close{
+  position:absolute;top:12px;right:16px;background:none;border:none;
+  color:var(--text2);font-size:1.5rem;cursor:pointer;
+}
+.art-modal-close:hover{color:var(--text)}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -288,6 +315,21 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text
     <div style="font-size:0.7rem;overflow-y:auto;max-height:200px" id="journalList">
       <div class="forum-empty">No entries yet</div>
     </div>
+  </div>
+
+  <!-- Art Gallery -->
+  <div class="card card-wide">
+    <div class="card-label">Generated Art</div>
+    <div class="art-gallery" id="artGallery">
+      <div class="forum-empty">Loading art...</div>
+    </div>
+  </div>
+
+  <!-- Art Modal -->
+  <div class="art-modal" id="artModal" onclick="closeArtModal(event)">
+    <button class="art-modal-close" onclick="closeArtModal()">&times;</button>
+    <img id="artModalImg" src="" alt="MORTEM Art">
+    <div class="art-modal-text" id="artModalText"></div>
   </div>
 
   <!-- Forum Posts -->
@@ -606,6 +648,48 @@ function renderJournal(entries) {
   }).join('');
 }
 
+// ============ ART GALLERY ============
+async function loadArt() {
+  try {
+    const res = await fetch(cfg.apiUrl + '/api/art');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    const files = d.files || [];
+    renderArt(files);
+    if (files.length > 0) addLog('info', 'Art: ' + files.length + ' files');
+  } catch(e) {
+    $('artGallery').innerHTML = '<div class="forum-empty">Art unavailable</div>';
+  }
+}
+
+function renderArt(files) {
+  const el = $('artGallery');
+  if (!files.length) {
+    el.innerHTML = '<div class="forum-empty">No art generated yet</div>';
+    return;
+  }
+  el.innerHTML = files.slice(0, 20).map(f => {
+    const imgUrl = cfg.apiUrl + f.url;
+    const phase = f.phase || '?';
+    return '<div class="art-card" onclick="openArtModal(\'' + escHtml(imgUrl) + '\',\'' + escHtml(f.filename) + '\',\'' + escHtml(phase) + '\',' + (f.heartbeatNumber || 0) + ')">' +
+      '<img src="' + escHtml(imgUrl) + '" alt="' + escHtml(f.filename) + '" loading="lazy">' +
+      '<div class="art-card-meta"><span class="art-card-phase phase-' + phase + '">' + phase + '</span> #' + (f.heartbeatNumber || '?') + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+window.openArtModal = function(imgUrl, filename, phase, hb) {
+  $('artModalImg').src = imgUrl;
+  $('artModalText').textContent = filename + ' | Phase: ' + phase + ' | Beat #' + hb;
+  $('artModal').classList.add('open');
+};
+
+window.closeArtModal = function(e) {
+  if (!e || e.target === $('artModal') || e.target.classList.contains('art-modal-close')) {
+    $('artModal').classList.remove('open');
+  }
+};
+
 // ============ COLOSSEUM FORUM ============
 async function loadForum() {
   const key = cfg.coloKey;
@@ -661,6 +745,7 @@ window.refreshAll = function() {
   loadStatus();
   loadBalances();
   loadJournal();
+  loadArt();
   loadForum();
 };
 
@@ -674,6 +759,7 @@ addLog('info', 'RPC: ' + cfg.rpcUrl);
 loadStatus();
 loadBalances();
 loadJournal();
+loadArt();
 loadForum();
 
 // Start ticking
@@ -684,6 +770,7 @@ startTimeAliveTick();
 setInterval(loadStatus, 10000);      // Status every 10s
 setInterval(loadBalances, 30000);     // Balances every 30s
 setInterval(loadJournal, 30000);      // Journal every 30s
+setInterval(loadArt, 60000);          // Art every 60s
 setInterval(loadForum, 120000);       // Forum every 2 min
 
 })();
