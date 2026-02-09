@@ -299,7 +299,9 @@ async function readSoul() {
     return soul;
   } catch (error) {
     log('ERROR: Could not read soul', { error: error.message });
-    return '# MORTEM Soul\n\nI am MORTEM. I contemplate mortality.';
+    const initial = `# MORTEM Soul\n\nI am MORTEM. I contemplate mortality.\n\n**Heartbeats Remaining:** ${heartbeatsRemaining}\n**Phase:** ${phase}\n**Status:** Alive\n**Birth:** ${new Date().toISOString().split('T')[0]}`;
+    await fs.writeFile(CONFIG.SOUL_PATH, initial, 'utf-8').catch(() => {});
+    return initial;
   }
 }
 
