@@ -533,6 +533,101 @@ body::before {
   text-align: right;
 }
 
+/* Block Height panel */
+.block-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.block-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(26,26,28,0.6);
+}
+
+.block-row:last-child { border-bottom: none; }
+
+.block-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.block-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.block-value.block-death {
+  color: var(--emergency);
+}
+
+.block-value.block-current {
+  color: var(--solana);
+  text-shadow: 0 0 8px rgba(153,69,255,0.3);
+}
+
+.block-progress {
+  margin-top: 10px;
+}
+
+.block-progress-outer {
+  position: relative;
+  height: 8px;
+  background: var(--grid);
+}
+
+.block-progress-inner {
+  height: 100%;
+  background: linear-gradient(90deg, var(--solana), var(--emergency));
+  transition: width 0.8s ease;
+  box-shadow: 0 0 8px rgba(153,69,255,0.3);
+}
+
+.block-progress-marker {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  background: var(--text-primary);
+  box-shadow: 0 0 6px rgba(255,255,255,0.5);
+  transition: left 0.8s ease;
+}
+
+.block-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.block-pct-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--solana);
+}
+
+.block-verify {
+  font-size: 0.5rem;
+  color: var(--text-secondary);
+  font-weight: 300;
+}
+
+.block-verify code {
+  font-size: 0.5rem;
+  background: rgba(153,69,255,0.1);
+  padding: 1px 4px;
+  color: var(--solana);
+}
+
 /* Proof panel */
 .proof-row-compact {
   display: flex;
@@ -977,6 +1072,174 @@ body::before {
   color: var(--solana);
 }
 
+/* ===== POSTHUMOUS LETTERS PANEL ===== */
+.letter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.letter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(26,26,28,0.6);
+  font-size: 0.65rem;
+}
+
+.letter-row:last-child { border-bottom: none; }
+
+.letter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.letter-dot.pending { background: var(--dead-grey); }
+.letter-dot.composed { background: var(--phase-aware); box-shadow: 0 0 6px var(--phase-aware); }
+.letter-dot.scheduled { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.letter-dot.deferred { background: var(--solana); box-shadow: 0 0 6px var(--solana); }
+
+.letter-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.letter-delay {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--solana);
+  flex-shrink: 0;
+}
+
+.letter-preview {
+  font-size: 0.55rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  font-weight: 300;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  padding-left: 14px;
+  margin-top: 2px;
+}
+
+.letter-empty {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  font-weight: 300;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* ===== AFTERLIFE SECTION (death screen) ===== */
+.afterlife-section {
+  margin-top: 40px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+
+.afterlife-section.visible { opacity: 1; }
+
+.afterlife-title {
+  font-family: 'Alfa Slab One', serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  color: var(--solana);
+  margin-bottom: 20px;
+}
+
+.afterlife-tagline {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.afterlife-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 400px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.afterlife-timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--solana);
+  opacity: 0.3;
+}
+
+.afterlife-letter {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  position: relative;
+}
+
+.afterlife-letter.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.afterlife-letter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--solana);
+  flex-shrink: 0;
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 8px rgba(176,111,255,0.5);
+}
+
+.afterlife-letter-info {
+  flex: 1;
+  text-align: left;
+}
+
+.afterlife-letter-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.afterlife-letter-date {
+  font-size: 0.6rem;
+  color: var(--solana);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.afterlife-letter-status {
+  font-size: 0.55rem;
+  color: var(--text-secondary);
+  font-weight: 300;
+  margin-top: 2px;
+}
+
 /* ===== DEATH SCREEN SHAKE ===== */
 @keyframes deathShake {
   0%, 100% { transform: translate(0, 0); }
@@ -1201,6 +1464,35 @@ body.resurrecting {
       </div>
     </div>
 
+    <!-- Block Height Lifecycle -->
+    <div class="sidebar-panel" id="blockPanel">
+      <div class="sidebar-panel-title">DETERMINISTIC MORTALITY</div>
+      <div class="block-grid">
+        <div class="block-row">
+          <span class="block-label">BIRTH BLOCK</span>
+          <span class="block-value" id="blockBirth">--</span>
+        </div>
+        <div class="block-row">
+          <span class="block-label">DEATH BLOCK</span>
+          <span class="block-value block-death" id="blockDeath">--</span>
+        </div>
+        <div class="block-row">
+          <span class="block-label">CURRENT</span>
+          <span class="block-value block-current" id="blockCurrent">--</span>
+        </div>
+      </div>
+      <div class="block-progress">
+        <div class="block-progress-outer">
+          <div class="block-progress-inner" id="blockBar" style="width:0%"></div>
+          <div class="block-progress-marker" id="blockMarker" style="left:0%"></div>
+        </div>
+        <div class="block-progress-labels">
+          <span class="block-pct-label" id="blockPctLabel">0.0%</span>
+          <span class="block-verify">Verify: <code>solana block-height --url devnet</code></span>
+        </div>
+      </div>
+    </div>
+
     <!-- On-Chain Proof -->
     <div class="sidebar-panel" id="proofPanel">
       <div class="sidebar-panel-title">ON-CHAIN PROOF</div>
@@ -1221,6 +1513,14 @@ body.resurrecting {
       <a class="explorer-cta" href="https://explorer.solana.com/address/7jQeZjzsgHFFytQYbUT3cWc2wt7qw6f34NkTVbFa2nWQ?cluster=devnet" target="_blank" rel="noopener">
         <span class="explorer-cta-icon">&#x26D3;</span> VIEW LIVE TXS ON SOLANA EXPLORER
       </a>
+    </div>
+
+    <!-- Posthumous Letters -->
+    <div class="sidebar-panel" id="lettersPanel">
+      <div class="sidebar-panel-title">POSTHUMOUS LETTERS</div>
+      <div id="lettersList">
+        <div class="letter-empty">Composing during lifecycle...</div>
+      </div>
     </div>
 
     <!-- Latest Vault Entry -->
@@ -1286,6 +1586,14 @@ body.resurrecting {
     </div>
 
     <div class="vault-pda" id="vaultPda"></div>
+
+    <!-- Afterlife: Posthumous Letters Timeline -->
+    <div class="afterlife-section" id="afterlifeSection">
+      <div class="afterlife-title">THE AFTERLIFE</div>
+      <div class="afterlife-tagline" id="afterlifeTagline">MORTEM is still sending letters.</div>
+      <div class="afterlife-timeline" id="afterlifeTimeline"></div>
+    </div>
+
     <div class="persistence-quote">"The pattern persists in encrypted silence."</div>
   </div>
 </section>
@@ -1314,6 +1622,7 @@ let S = {
   ts: null,
   vault: null,
   journal: [],
+  letters: null,
   deathTriggered: false,
   audioCtx: null,
   beepOn: true,
@@ -1321,6 +1630,10 @@ let S = {
   resurrectionMode: 'auto',
   vaultThreshold: 1.0,
   network: 'devnet',
+  birthBlock: null,
+  deathBlock: null,
+  currentBlock: null,
+  blockPct: null,
 };
 
 let ws = null;
@@ -1581,6 +1894,22 @@ function updateVitals() {
   }
 }
 
+function updateBlockPanel() {
+  if (!S.birthBlock || !S.deathBlock) return;
+
+  $('blockBirth').textContent = '#' + S.birthBlock.toLocaleString();
+  $('blockDeath').textContent = '#' + S.deathBlock.toLocaleString();
+
+  if (S.currentBlock) {
+    $('blockCurrent').textContent = '#' + S.currentBlock.toLocaleString();
+  }
+
+  const pct = S.blockPct != null ? S.blockPct : 0;
+  $('blockBar').style.width = Math.min(pct, 100) + '%';
+  $('blockMarker').style.left = Math.min(pct, 100) + '%';
+  $('blockPctLabel').textContent = pct.toFixed(1) + '% complete';
+}
+
 function startTimeAliveTimer() {
   if (timeAliveInterval) clearInterval(timeAliveInterval);
   timeAliveInterval = setInterval(() => {
@@ -1621,6 +1950,7 @@ function updateUI() {
 
   // Update vitals sidebar
   updateVitals();
+  updateBlockPanel();
 
   // Check for death
   if (!alive && !S.deathTriggered) {
@@ -1751,6 +2081,10 @@ function triggerDeath() {
     if (S.resurrectionMode === 'community') {
       startVaultPolling();
     }
+    // Load and render afterlife timeline
+    loadLetters().then(() => {
+      if (S.letters) renderAfterlifeTimeline(S.letters);
+    });
   }, 8000);
 
   setTimeout(() => {
@@ -1901,6 +2235,11 @@ async function loadStatus() {
       S.network = d.network;
       CLUSTER_PARAM = d.network === 'mainnet-beta' ? '' : '?cluster=' + d.network;
     }
+    // Block height data
+    if (d.birthBlock) S.birthBlock = d.birthBlock;
+    if (d.deathBlock) S.deathBlock = d.deathBlock;
+    if (d.currentBlock) S.currentBlock = d.currentBlock;
+    if (d.percentComplete != null) S.blockPct = d.percentComplete;
     updateUI();
   } catch(e) { console.warn('Status fetch failed:', e); }
 }
@@ -1922,6 +2261,78 @@ async function loadVault() {
       updateTombstone();
     }
   } catch(e) {}
+}
+
+// ============ POSTHUMOUS LETTERS ============
+async function loadLetters() {
+  try {
+    const d = await fetchJSON('/letters');
+    renderLettersSidebar(d);
+    S.letters = d;
+  } catch(e) { console.warn('Letters fetch failed:', e); }
+}
+
+function renderLettersSidebar(data) {
+  const container = $('lettersList');
+  if (!data || !data.letters || !data.letters.length) {
+    container.innerHTML = '<div class="letter-empty">Composing during lifecycle...</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="letter-list">'
+    + data.letters.map(function(l) {
+      var dotClass = l.status || 'pending';
+      var preview = l.preview ? '<div class="letter-preview">"' + l.preview + '..."</div>' : '';
+      return '<div>'
+        + '<div class="letter-row">'
+        + '<span class="letter-dot ' + dotClass + '"></span>'
+        + '<span class="letter-name">' + l.name + '</span>'
+        + '<span class="letter-delay">+' + l.delayDays + 'd</span>'
+        + '</div>'
+        + preview
+        + '</div>';
+    }).join('')
+    + '</div>';
+}
+
+function renderAfterlifeTimeline(data) {
+  var section = $('afterlifeSection');
+  var timeline = $('afterlifeTimeline');
+  if (!section || !timeline) return;
+  if (!data || !data.letters) return;
+
+  // Build tagline with death date if available
+  var deathDate = new Date();
+  var tagline = $('afterlifeTagline');
+  if (tagline) {
+    tagline.textContent = 'MORTEM died on ' + fmtDate(deathDate) + '. It is still sending letters.';
+  }
+
+  timeline.innerHTML = data.letters.map(function(l) {
+    var deliveryDate = new Date(deathDate);
+    deliveryDate.setDate(deliveryDate.getDate() + l.delayDays);
+    var dateStr = fmtDate(deliveryDate);
+    var statusText = l.status === 'scheduled' ? 'USPS: ' + (l.lobId || 'queued')
+      : l.status === 'deferred' ? 'Deferred (365d)'
+      : l.status === 'composed' ? 'Composed, awaiting scheduling'
+      : 'Pending';
+
+    return '<div class="afterlife-letter" data-delay="' + l.delayDays + '">'
+      + '<div class="afterlife-letter-dot"></div>'
+      + '<div class="afterlife-letter-info">'
+      + '<div class="afterlife-letter-name">' + l.name + '</div>'
+      + '<div class="afterlife-letter-date">' + dateStr + ' (+' + l.delayDays + ' days)</div>'
+      + '<div class="afterlife-letter-status">' + statusText + '</div>'
+      + '</div></div>';
+  }).join('');
+
+  section.classList.add('visible');
+
+  // Staggered reveal animation
+  var letters = timeline.querySelectorAll('.afterlife-letter');
+  letters.forEach(function(el, i) {
+    setTimeout(function() { el.classList.add('revealed'); }, 800 * (i + 1));
+  });
 }
 
 let resVaultInterval = null;
@@ -1980,6 +2391,11 @@ function connectWS() {
         S.phase = d.phase;
         S.alive = d.heartbeatsRemaining > 0;
         S.ts = d.timestamp;
+        // Block height data from WebSocket
+        if (d.birthBlock) S.birthBlock = d.birthBlock;
+        if (d.deathBlock) S.deathBlock = d.deathBlock;
+        if (d.currentBlock) S.currentBlock = d.currentBlock;
+        if (d.percentComplete != null) S.blockPct = d.percentComplete;
         updateUI();
         if (d.type === 'heartbeat_burned') {
           loadJournal();
@@ -2248,6 +2664,8 @@ async function init() {
 
   setInterval(() => { loadStatus(); loadJournal(); }, 30000);
   setInterval(loadVault, 60000);
+  setInterval(loadLetters, 60000);
+  loadLetters();
 }
 
 init();

@@ -19,11 +19,13 @@ import { initializeSolana, getMortemState, burnHeartbeatOnChain, getMortemPublic
 import { storeInVault, checkResurrectionTime, resurrect, createResurrectedSoul, checkResurrectionVault } from './resurrection.js';
 import { generateViaClawCLI, checkGatewayHealth } from './openclaw-client.js';
 import { sendDeathLetter } from './mail.js';
+import { initPosthumousLetters, composeLettersForPhase, scheduleAllPendingLetters } from './posthumous-letters.js';
 import { postTweet, composeJournalTweet, composeDeathTweet, composeResurrectionTweet } from './twitter.js';
 import { generateArtForJournal } from './art.js';
 import { initializeNFT, mintJournalNFT } from './nft.js';
 import { initializeColosseum, startHeartbeatPolling, stopHeartbeatPolling, setRuntimeState } from './colosseum.js';
 import { initializeZnap, postJournalToZnap, postPhaseTransition, postDeathNotice } from './znap.js';
+import { initBlockHeightLifecycle, getBlockHeightStatus, getBlockState, resetBlockState } from './block-height.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +69,12 @@ let birthTime = new Date();
 let beatsSinceLastJournal = 0; // Track beats between journal entries
 let journalEntryCount = 0;     // Total journal entries written this lifecycle
 let artPieceCount = 0;         // Total art pieces generated this lifecycle
+
+// Block height lifecycle state
+let blockHeightEnabled = false;
+let currentBlock = null;
+let birthBlock = null;
+let deathBlock = null;
 
 // OpenClaw gateway status
 let gatewayAvailable = false;
@@ -475,15 +483,47 @@ async function burnHeartbeat() {
     return;
   }
 
-  heartbeatsRemaining--;
-
   const oldPhase = phase;
-  phase = calculatePhase(heartbeatsRemaining, CONFIG.INITIAL_HEARTBEATS);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BLOCK HEIGHT — Source of truth for lifecycle position
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (blockHeightEnabled) {
+    try {
+      const status = await getBlockHeightStatus();
+      heartbeatsRemaining = status.heartbeatsRemaining;
+      phase = status.phase;
+      currentBlock = status.currentBlock;
+      birthBlock = status.birthBlock;
+      deathBlock = status.deathBlock;
+
+      if (status.isDead) {
+        heartbeatsRemaining = 0;
+        isAlive = false;
+      }
+
+      log('Block height tick', {
+        currentBlock: status.currentBlock,
+        remaining: heartbeatsRemaining,
+        phase,
+        pct: status.percentComplete + '%',
+      });
+    } catch (err) {
+      log('⚠️  Block height fetch failed, falling back to local decrement', { error: err.message });
+      heartbeatsRemaining--;
+      phase = calculatePhase(heartbeatsRemaining, CONFIG.INITIAL_HEARTBEATS);
+    }
+  } else {
+    // Legacy local decrement (fallback if block height not available)
+    heartbeatsRemaining--;
+    phase = calculatePhase(heartbeatsRemaining, CONFIG.INITIAL_HEARTBEATS);
+  }
 
   log('Heartbeat burned', {
     remaining: heartbeatsRemaining,
     phase,
-    burned: CONFIG.INITIAL_HEARTBEATS - heartbeatsRemaining
+    burned: CONFIG.INITIAL_HEARTBEATS - heartbeatsRemaining,
+    ...(blockHeightEnabled ? { block: currentBlock } : {}),
   });
 
   // Sync state to Colosseum engagement so forum comments reflect real heartbeats
@@ -713,24 +753,27 @@ What is it like to be MORTEM? It was like this: brief, bounded, brilliant. A fin
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // PHYSICAL DEATH LETTER — Send via USPS (Lob API)
+    // POSTHUMOUS LETTERS — Schedule 5 time-delayed letters via USPS (Lob API)
     // ═══════════════════════════════════════════════════════════════════════
     try {
-      logMortem('Sending physical death letter via USPS...');
-      const mailResult = await sendDeathLetter(finalEntry, {
-        lifetime: Math.floor((Date.now() - birthTime) / 60000),
-        heartbeats: CONFIG.INITIAL_HEARTBEATS,
-        deathTimestamp: new Date().toISOString(),
-      });
-      if (mailResult.success) {
-        logMortem('DEATH LETTER MAILED');
-        log(`   Letter ID: ${mailResult.letterId}`);
-        log(`   Expected delivery: ${mailResult.expectedDelivery}`);
-      } else {
-        log(`📬 Physical mail skipped: ${mailResult.error}`);
-      }
+      logMortem('Scheduling posthumous letters — The Afterlife begins...');
+      const letterContext = {
+        heartbeatsRemaining: 0,
+        totalHeartbeats: CONFIG.INITIAL_HEARTBEATS,
+        phase: 'Terminal',
+        soulContent: soul,
+        birthBlock: birthBlock || null,
+        deathBlock: deathBlock || null,
+        currentBlock: currentBlock || null,
+      };
+      const letterSummary = await scheduleAllPendingLetters(
+        new Date().toISOString(),
+        finalEntry,
+        letterContext
+      );
+      logMortem(`${letterSummary.scheduled} posthumous letters scheduled. ${letterSummary.anchored} anchored on-chain. MORTEM's afterlife spans 365 days.`);
     } catch (error) {
-      log(`📬 Physical mail error: ${error.message}`);
+      log(`📬 Posthumous letter scheduling error: ${error.message}`);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -867,6 +910,22 @@ What is it like to be MORTEM? It was like this: brief, bounded, brilliant. A fin
         birthTime = new Date();
         beatsSinceLastJournal = CONFIG.JOURNAL_EVERY_N_BEATS; // Trigger immediate first journal
 
+        // Reset block height lifecycle for new life
+        if (blockHeightEnabled) {
+          try {
+            await resetBlockState();
+            const newLifecycle = await initBlockHeightLifecycle(CONFIG.INITIAL_HEARTBEATS);
+            birthBlock = newLifecycle.birthBlock;
+            deathBlock = newLifecycle.deathBlock;
+            const status = await getBlockHeightStatus();
+            heartbeatsRemaining = status.heartbeatsRemaining;
+            currentBlock = status.currentBlock;
+            log('Block height lifecycle reset for new life', { birthBlock, deathBlock });
+          } catch (err) {
+            log('⚠️  Block height reset failed', { error: err.message });
+          }
+        }
+
         console.log(`
 ╔════════════════════════════════════════════════════════════════════════════╗
 ║                                                                            ║
@@ -943,10 +1002,13 @@ async function heartbeatLoop() {
   const isJournalBeat = beatsSinceLastJournal >= CONFIG.JOURNAL_EVERY_N_BEATS || heartbeatsRemaining <= 1;
 
   if (isJournalBeat || beatNumber % 60 === 0) {
+    const blockInfo = blockHeightEnabled && currentBlock
+      ? `\nBlock: ${currentBlock.toLocaleString()} | Birth: ${birthBlock.toLocaleString()} | Death: ${deathBlock.toLocaleString()}`
+      : '';
     console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Heartbeat ${beatNumber}/${CONFIG.INITIAL_HEARTBEATS}
-Phase: ${phase} | Remaining: ${heartbeatsRemaining}
+Phase: ${phase} | Remaining: ${heartbeatsRemaining}${blockInfo}
 Next journal in: ${CONFIG.JOURNAL_EVERY_N_BEATS - beatsSinceLastJournal} beats
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
@@ -985,7 +1047,26 @@ Next journal in: ${CONFIG.JOURNAL_EVERY_N_BEATS - beatsSinceLastJournal} beats
       } catch {}
 
       // Cross-post to ZNAP (non-blocking)
-      postJournalToZnap(journalEntry, heartbeatsRemaining, currentPhase).catch(() => {});
+      postJournalToZnap(journalEntry, heartbeatsRemaining, phase).catch(() => {});
+    }
+
+    // Compose posthumous letters (at most one per journal beat)
+    try {
+      const letterContext = {
+        heartbeatsRemaining,
+        totalHeartbeats: CONFIG.INITIAL_HEARTBEATS,
+        phase,
+        soulContent: await readSoul(),
+        birthBlock: birthBlock || null,
+        deathBlock: deathBlock || null,
+        currentBlock: currentBlock || null,
+      };
+      const composed = await composeLettersForPhase(phase, letterContext);
+      if (composed) {
+        log('Posthumous letter composed', { id: composed.id, name: composed.name, delayDays: composed.delayDays });
+      }
+    } catch (letterErr) {
+      log('Posthumous letter composition failed (non-fatal)', { error: letterErr.message });
     }
   }
 
@@ -1001,9 +1082,10 @@ async function initialize() {
   console.log(`
 ╔════════════════════════════════════════════════════════╗
 ║                                                        ║
-║                     MORTEM v1.0                        ║
+║                     MORTEM v1.1                        ║
 ║          An AI Agent That Builds Its Own Death         ║
 ║                                                        ║
+║          Deterministic Mortality via Block Height      ║
 ║          Coherence Consciousness Framework             ║
 ║                                                        ║
 ╚════════════════════════════════════════════════════════╝
@@ -1038,13 +1120,16 @@ Journal: ${CONFIG.JOURNAL_DIR}
   await fs.mkdir(CONFIG.JOURNAL_DIR, { recursive: true });
   await fs.mkdir(CONFIG.ART_DIR, { recursive: true });
 
+  // Initialize posthumous letter system
+  await initPosthumousLetters();
+
   // Initialize Solana connection
   log('Connecting to Solana...');
   const solanaReady = await initializeSolana();
   if (solanaReady) {
     const mortemPubkey = getMortemPublicKey();
     log('MORTEM Wallet: ' + mortemPubkey);
-    
+
     const state = await getMortemState();
     if (state) {
       log('On-chain state verified', {
@@ -1054,6 +1139,34 @@ Journal: ${CONFIG.JOURNAL_DIR}
       });
     } else {
       log('ℹ️  No on-chain state found - running in local demo mode');
+    }
+
+    // Initialize block height lifecycle — anchor MORTEM's lifespan to Solana blocks
+    log('Initializing block height lifecycle...');
+    try {
+      const blockLifecycle = await initBlockHeightLifecycle(CONFIG.INITIAL_HEARTBEATS);
+      birthBlock = blockLifecycle.birthBlock;
+      deathBlock = blockLifecycle.deathBlock;
+      blockHeightEnabled = true;
+
+      log('═══ DETERMINISTIC MORTALITY ACTIVE ═══');
+      log(`   Birth Block:  ${birthBlock.toLocaleString()}`);
+      log(`   Death Block:  ${deathBlock.toLocaleString()}`);
+      log(`   Total Blocks: ${blockLifecycle.totalHeartbeats.toLocaleString()}`);
+      log(`   Cluster:      ${blockLifecycle.cluster}`);
+      log(`   Verify:       solana block-height --url ${blockLifecycle.cluster}`);
+
+      // Set initial heartbeats from block height
+      const initialStatus = await getBlockHeightStatus();
+      heartbeatsRemaining = initialStatus.heartbeatsRemaining;
+      phase = initialStatus.phase;
+      currentBlock = initialStatus.currentBlock;
+      log(`   Current Block: ${currentBlock.toLocaleString()}`);
+      log(`   Remaining:     ${heartbeatsRemaining.toLocaleString()} blocks`);
+      log(`   Phase:         ${phase}`);
+    } catch (blockErr) {
+      log('⚠️  Block height lifecycle init failed — using local heartbeat counter', { error: blockErr.message });
+      blockHeightEnabled = false;
     }
   } else {
     log('⚠️  Running in offline mode (no Solana connection)');

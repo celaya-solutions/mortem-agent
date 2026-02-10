@@ -7,8 +7,11 @@ sdk/dist/
 
 # Runtime state
 .vault
+.letters/
 .api.pid
 .runtime.pid
+.block-state.json
+runtime/.block-state.json
 logs/
 memory/
 

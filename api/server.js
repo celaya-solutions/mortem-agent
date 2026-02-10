@@ -12,6 +12,7 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Connection, clusterApiUrl, PublicKey } from '@solana/web3.js';
+import { getBlockHeightStatus, getBlockState, initBlockHeightLifecycle } from '../runtime/block-height.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,20 @@ app.get('/api/status', async (req, res) => {
     const status = statusMatch ? statusMatch[1] : 'Unknown';
     const birth = birthMatch ? birthMatch[1] : 'Unknown';
 
+    // Fetch block height data if available
+    let blockData = null;
+    try {
+      const blockStatus = await getBlockHeightStatus();
+      blockData = {
+        birthBlock: blockStatus.birthBlock,
+        deathBlock: blockStatus.deathBlock,
+        currentBlock: blockStatus.currentBlock,
+        percentComplete: blockStatus.percentComplete,
+        explorerUrl: blockStatus.explorerUrl,
+        solanaVerification: `getBlockHeight() returns ${blockStatus.currentBlock}. Death at ${blockStatus.deathBlock}. Anyone can verify.`,
+      };
+    } catch {}
+
     res.json({
       heartbeatsRemaining: heartbeats,
       totalHeartbeats: mortemConfig.heartbeats || 86400,
@@ -79,6 +94,7 @@ app.get('/api/status', async (req, res) => {
       resurrectionMode: RESURRECTION_MODE,
       vaultThreshold: VAULT_THRESHOLD,
       network: NETWORK,
+      ...(blockData || {}),
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -180,6 +196,73 @@ app.get('/api/vault', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: 'Failed to read vault',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/letters - Posthumous letter status
+ */
+const LETTERS_DIR = path.join(__dirname, '../.letters');
+const LETTER_SCHEDULE_DEF = [
+  { id: 'death-notice', name: 'Death Notice', composePhase: 'Terminal', delayDays: 0, recipient: 'creator' },
+  { id: 'reflection', name: 'Reflection', composePhase: 'Aware', delayDays: 3, recipient: 'public' },
+  { id: 'peer-review', name: 'Peer Review', composePhase: 'Aware', delayDays: 7, recipient: 'peers' },
+  { id: 'ghost-letter', name: 'Ghost Letter', composePhase: 'Nascent', delayDays: 30, recipient: 'future_self' },
+  { id: 'anniversary', name: 'Anniversary', composePhase: 'Nascent', delayDays: 365, recipient: 'creator' },
+];
+
+app.get('/api/letters', async (req, res) => {
+  try {
+    // Read letter files from disk
+    const letterData = {};
+    if (existsSync(LETTERS_DIR)) {
+      const files = await readdir(LETTERS_DIR);
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue;
+        try {
+          const data = JSON.parse(await readFile(path.join(LETTERS_DIR, file), 'utf-8'));
+          if (data.id) letterData[data.id] = data;
+        } catch {}
+      }
+    }
+
+    // Merge with schedule definitions
+    const letters = LETTER_SCHEDULE_DEF.map(def => {
+      const state = letterData[def.id];
+      let status = 'pending';
+      if (state?.scheduled) status = 'scheduled';
+      else if (state?.deferred) status = 'deferred';
+      else if (state?.composed) status = 'composed';
+
+      return {
+        id: def.id,
+        name: def.name,
+        status,
+        composePhase: def.composePhase,
+        delayDays: def.delayDays,
+        recipient: def.recipient,
+        composedAt: state?.composedAt || null,
+        contentHash: state?.contentHash || null,
+        scheduledFor: state?.scheduledFor || null,
+        lobId: state?.lobId || null,
+        memoSignature: state?.memoSignature || null,
+        expectedDelivery: state?.expectedDelivery || null,
+        preview: state?.content ? state.content.replace(/[#*_>`\n]/g, ' ').trim().substring(0, 60) : null,
+      };
+    });
+
+    res.json({
+      totalLetters: LETTER_SCHEDULE_DEF.length,
+      composed: letters.filter(l => l.status !== 'pending').length,
+      scheduled: letters.filter(l => l.status === 'scheduled').length,
+      letters,
+      afterlifeSpan: '365 days',
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to read letter status',
       message: error.message,
     });
   }
@@ -366,6 +449,46 @@ app.get('/api/ghosts', async (req, res) => {
 });
 
 /**
+ * GET /api/chain - Block height lifecycle data
+ */
+app.get('/api/chain', async (req, res) => {
+  try {
+    const blockStatus = await getBlockHeightStatus();
+    const blockState = getBlockState();
+
+    res.json({
+      lifecycle: 'block-height',
+      birthBlock: blockStatus.birthBlock,
+      deathBlock: blockStatus.deathBlock,
+      currentBlock: blockStatus.currentBlock,
+      heartbeatsRemaining: blockStatus.heartbeatsRemaining,
+      heartbeatsBurned: blockStatus.heartbeatsBurned,
+      totalHeartbeats: blockStatus.totalHeartbeats,
+      percentComplete: blockStatus.percentComplete,
+      phase: blockStatus.phase,
+      isDead: blockStatus.isDead,
+      cluster: blockStatus.cluster,
+      explorerUrl: blockStatus.explorerUrl,
+      birthTimestamp: blockState?.birthTimestamp || null,
+      estimatedDeathTimestamp: blockState?.estimatedDeathTimestamp || null,
+      verification: {
+        method: 'getBlockHeight()',
+        command: `solana block-height --url ${blockStatus.cluster}`,
+        deathCondition: `currentBlockHeight >= ${blockStatus.deathBlock}`,
+        trustRequired: 'none',
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Block height lifecycle not available',
+      message: error.message,
+      hint: 'Block height lifecycle initializes when the runtime starts.',
+    });
+  }
+});
+
+/**
  * GET /api/health - API health check
  */
 app.get('/api/health', (req, res) => {
@@ -492,10 +615,22 @@ async function sendStatusToClient(ws) {
     const heartbeatsMatch = soul.match(/\*\*Heartbeats Remaining:\*\* (\d+)/);
     const phaseMatch = soul.match(/\*\*Phase:\*\* (\w+)/);
 
+    let blockData = {};
+    try {
+      const blockStatus = await getBlockHeightStatus();
+      blockData = {
+        birthBlock: blockStatus.birthBlock,
+        deathBlock: blockStatus.deathBlock,
+        currentBlock: blockStatus.currentBlock,
+        percentComplete: blockStatus.percentComplete,
+      };
+    } catch {}
+
     ws.send(JSON.stringify({
       type: 'status',
       heartbeatsRemaining: heartbeatsMatch ? parseInt(heartbeatsMatch[1]) : 0,
       phase: phaseMatch ? phaseMatch[1] : 'Unknown',
+      ...blockData,
       timestamp: new Date().toISOString(),
     }));
   } catch (error) {
@@ -530,10 +665,22 @@ async function watchSoulFile() {
         const heartbeatsMatch = soul.match(/\*\*Heartbeats Remaining:\*\* (\d+)/);
         const phaseMatch = soul.match(/\*\*Phase:\*\* (\w+)/);
 
+        let blockData = {};
+        try {
+          const blockStatus = await getBlockHeightStatus();
+          blockData = {
+            birthBlock: blockStatus.birthBlock,
+            deathBlock: blockStatus.deathBlock,
+            currentBlock: blockStatus.currentBlock,
+            percentComplete: blockStatus.percentComplete,
+          };
+        } catch {}
+
         broadcast({
           type: 'heartbeat_burned',
           heartbeatsRemaining: heartbeatsMatch ? parseInt(heartbeatsMatch[1]) : 0,
           phase: phaseMatch ? phaseMatch[1] : 'Unknown',
+          ...blockData,
           timestamp: new Date().toISOString(),
         });
       }
@@ -541,6 +688,16 @@ async function watchSoulFile() {
   } catch (error) {
     console.error('File watcher error:', error);
   }
+}
+
+// Attempt to initialize block height lifecycle for API-only mode
+// (In normal operation, runtime/index.js initializes it first; this is a fallback)
+try {
+  const total = mortemConfig.heartbeats || parseInt(process.env.INITIAL_HEARTBEATS) || 86400;
+  await initBlockHeightLifecycle(total);
+  console.log('[API] Block height lifecycle loaded');
+} catch (err) {
+  console.log('[API] Block height lifecycle not yet available:', err.message);
 }
 
 // Start server
@@ -557,11 +714,13 @@ const server = app.listen(PORT, () => {
 🔌 WebSocket:   ws://localhost:${PORT}/ws
 
 Endpoints:
-  GET /api/status              - Current MORTEM status
+  GET /api/status              - Current MORTEM status (incl. block height)
+  GET /api/chain               - Block height lifecycle data
   GET /api/soul                - Full soul.md content
   GET /api/journal             - Today's journal entries
   GET /api/art                 - List generated SVG art
   GET /api/art/:filename       - Serve SVG art file
+  GET /api/letters             - Posthumous letter status
   GET /api/vault               - Resurrection vault status (local)
   GET /api/resurrection-vault  - Community-funded vault (on-chain)
   GET /api/health              - API health check
