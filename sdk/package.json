@@ -1,6 +1,6 @@
 {
   "name": "mortem-lifecycle-sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "SDK for integrating with MORTEM — an AI agent with programmatic mortality on Solana. Observe heartbeats, detect death, fund resurrection, and build agent integrations.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

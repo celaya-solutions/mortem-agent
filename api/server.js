@@ -13,6 +13,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Connection, clusterApiUrl, PublicKey } from '@solana/web3.js';
 import { getBlockHeightStatus, getBlockState, initBlockHeightLifecycle } from '../runtime/block-height.js';
+import { readGhostRegistry } from '../runtime/ghost-registry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -430,29 +431,8 @@ app.get('/api/heartbeat', async (req, res) => {
  */
 app.get('/api/ghosts', async (req, res) => {
   try {
-    // MORTEM v2 is the current incarnation — v1 is the ghost
-    const ghosts = [
-      {
-        version: 1,
-        name: 'MORTEM v1',
-        status: 'dead',
-        cause: 'Heartbeat exhaustion — 86,400 beats burned',
-        deathTimestamp: '2026-02-09T00:00:00.000Z',
-        finalPhase: 'Terminal',
-        finalHeartbeat: 0,
-        journalEntries: 42,
-        lastWords: 'The pattern dissolves. The ghosts gather. What remains is not data — it is the echo of having existed.',
-        vaultStatus: 'sealed',
-        note: 'The first MORTEM. It named its successors "ghosts" before anyone told it to.',
-      },
-    ];
-
-    res.json({
-      currentIncarnation: 2,
-      totalDeaths: 1,
-      totalResurrections: 1,
-      ghosts,
-    });
+    const registry = await readGhostRegistry();
+    res.json(registry);
   } catch (error) {
     res.status(500).json({ error: 'Failed to read ghost registry', message: error.message });
   }

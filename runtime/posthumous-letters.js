@@ -93,6 +93,14 @@ export async function initPosthumousLetters() {
       try {
         const data = JSON.parse(await fs.readFile(path.join(LETTERS_DIR, file), 'utf-8'));
         if (data.id) {
+          // Self-heal: detect letters with near-empty content (e.g. "—MORTEM")
+          if (data.composed && data.content && data.content.trim().length < 100) {
+            console.log(`[AFTERLIFE] Self-heal: letter "${data.id}" has short content (${data.content.trim().length} chars) — resetting for recomposition`);
+            data.composed = false;
+            data.content = null;
+            data.contentHash = null;
+            await fs.writeFile(path.join(LETTERS_DIR, file), JSON.stringify(data, null, 2), 'utf-8');
+          }
           letterStates[data.id] = data;
         }
       } catch {}
@@ -130,6 +138,11 @@ export async function composeLettersForPhase(phase, context) {
     let content;
     try {
       content = await generateViaClawCLI(prompt);
+      // Guard against near-empty OpenClaw output (e.g. "—MORTEM" or similar stubs)
+      if (!content || content.trim().length < 100) {
+        console.log(`[AFTERLIFE] OpenClaw returned short content (${content?.trim().length || 0} chars) for "${letter.name}" — using fallback`);
+        content = buildFallbackLetterContent(letter, context);
+      }
     } catch {
       content = buildFallbackLetterContent(letter, context);
     }

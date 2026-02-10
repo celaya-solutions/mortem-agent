@@ -35,6 +35,7 @@ export const DATA_PATHS = {
   ART_DIR: path.join(DATA_ROOT, 'art'),
   VAULT_PATH: path.join(DATA_ROOT, 'runtime', '.vault'),
   BLOCK_STATE: path.join(DATA_ROOT, 'runtime', '.block-state.json'),
+  GHOST_REGISTRY: path.join(DATA_ROOT, 'memory', 'ghost-registry.json'),
   CONFIG_PATH: path.join(DATA_ROOT, '.mortem-config.json'),
   isRailway,
   DATA_ROOT,
