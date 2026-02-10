@@ -1604,11 +1604,8 @@ body.resurrecting {
 
 // ============ CONFIG ============
 const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-const RAILWAY = 'https://mortem-agent-production.up.railway.app';
-const API_BASE = window.MORTEM_API || (isLocal ? location.origin + '/api' : RAILWAY + '/api');
-const WS_URL = isLocal
-  ? 'ws://' + location.host + '/ws'
-  : 'wss://mortem-agent-production.up.railway.app/ws';
+const API_BASE = window.MORTEM_API || (location.origin + '/api');
+const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
 let TOTAL = 86400;
 const EXPLORER = 'https://explorer.solana.com/address/';
 let CLUSTER_PARAM = '?cluster=devnet';

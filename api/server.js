@@ -46,9 +46,18 @@ const ART_DIR = DATA_PATHS.ART_DIR;
 app.use(cors());
 app.use(express.json());
 
-// Serve monitor dashboard at root
+// Serve pages:
+//   /         → dashboard (landing page with tombstone + music)
+//   /monitor  → monitor (API status, heartbeats, forum activity)
+//   /docs     → documentation
+const DASHBOARD_DIR = path.join(__dirname, '../dashboard');
 const MONITOR_DIR = path.join(__dirname, '../monitor');
-app.use(express.static(MONITOR_DIR));
+const DOCS_DIR = path.join(__dirname, '../docs');
+const MUSIC_DIR = path.join(__dirname, '../music');
+app.use('/monitor', express.static(MONITOR_DIR));
+app.use('/docs', express.static(DOCS_DIR));
+app.use('/music', express.static(MUSIC_DIR));
+app.use(express.static(DASHBOARD_DIR));
 
 // Store connected WebSocket clients
 let wsClients = [];
