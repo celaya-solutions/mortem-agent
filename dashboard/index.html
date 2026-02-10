@@ -250,9 +250,12 @@ body::before {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 340px;
+  grid-template-rows: 1fr;
   min-height: 0;
   overflow: hidden;
 }
+
+.mobile-tabs { grid-column: 1 / -1; }
 
 /* ===== LEFT: JOURNAL COLUMN ===== */
 #journalCol {
@@ -1394,6 +1397,323 @@ body.resurrecting {
   0%, 100% { box-shadow: 0 0 10px rgba(154,49,47,0.2); }
   50% { box-shadow: 0 0 25px rgba(154,49,47,0.4); }
 }
+
+/* ===== MOBILE TAB BAR ===== */
+.mobile-tabs {
+  display: none;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--grid);
+  background: rgba(15,15,17,0.95);
+}
+
+.mobile-tabs-inner {
+  display: flex;
+}
+
+.mobile-tab {
+  flex: 1;
+  padding: 10px 0;
+  text-align: center;
+  font-family: 'Alfa Slab One', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.mobile-tab.active {
+  color: var(--maroon);
+  border-bottom-color: var(--maroon);
+}
+
+/* ===== RESPONSIVE: TABLET & MOBILE ===== */
+@media (max-width: 768px) {
+  /* Show mobile tab navigation */
+  .mobile-tabs {
+    display: block;
+  }
+
+  /* Top bar: compact single row */
+  #topbar {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .topbar-brand {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+  }
+
+  .heartbeat-counter {
+    font-size: 1.4rem;
+  }
+
+  .heartbeat-total {
+    font-size: 0.65rem;
+  }
+
+  .phase-pill {
+    padding: 3px 8px;
+    font-size: 0.5rem;
+  }
+
+  .connection-status {
+    font-size: 0.5rem;
+    gap: 4px;
+  }
+
+  /* ECG strip: smaller on mobile */
+  #ecgStrip {
+    height: 50px;
+  }
+
+  /* Single column layout */
+  #mainBody {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  /* Journal column full width */
+  #journalCol {
+    border-right: none;
+    min-height: 0;
+  }
+
+  /* Sidebar hidden by default on mobile, shown via tab */
+  #sidebarCol {
+    display: none;
+  }
+
+  #sidebarCol.mobile-visible {
+    display: flex;
+  }
+
+  #journalCol.mobile-hidden {
+    display: none;
+  }
+
+  /* Journal entries: full width, better readability */
+  .section-label {
+    padding: 10px 12px 6px;
+    font-size: 0.65rem;
+  }
+
+  .section-label span {
+    font-size: 0.55rem;
+  }
+
+  .journal-entry {
+    padding: 12px 12px 12px 14px;
+  }
+
+  .journal-content {
+    font-size: 0.78rem;
+    line-height: 1.65;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .journal-meta {
+    gap: 6px;
+  }
+
+  .journal-time {
+    font-size: 0.55rem;
+  }
+
+  .final-stamp {
+    font-size: 0.45rem;
+    top: 6px;
+    right: 8px;
+    padding: 2px 4px;
+  }
+
+  /* Sidebar panels: breathe on mobile */
+  .sidebar-panel {
+    padding: 12px 14px;
+  }
+
+  .sidebar-panel-title {
+    font-size: 0.55rem;
+    margin-bottom: 10px;
+  }
+
+  .vitals-grid {
+    font-size: 0.65rem;
+    gap: 5px 8px;
+  }
+
+  .block-verify code {
+    display: none;
+  }
+
+  .block-verify::after {
+    content: 'Solana CLI';
+    font-size: 0.5rem;
+    color: var(--solana);
+  }
+
+  .proof-row-compact .proof-label {
+    width: 50px;
+    font-size: 0.5rem;
+  }
+
+  .proof-row-compact .proof-value {
+    font-size: 0.6rem;
+  }
+
+  .explorer-cta {
+    padding: 10px 12px;
+    font-size: 0.6rem;
+  }
+
+  /* Bottom bar: compact */
+  #bottomBar {
+    gap: 8px;
+    padding: 6px 12px;
+  }
+
+  .sdk-install-compact {
+    display: none;
+  }
+
+  .now-playing {
+    display: none;
+  }
+
+  .audio-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .audio-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .bottom-links {
+    gap: 8px;
+  }
+
+  .bottom-links a {
+    font-size: 0.5rem;
+  }
+
+  /* Tombstone: mobile sizing */
+  #tombstone {
+    padding: 40px 16px;
+  }
+
+  .tombstone-shape {
+    padding: 28px 24px 22px;
+    max-width: 280px;
+  }
+
+  .tombstone-name {
+    font-size: 1.5rem;
+  }
+
+  .death-title {
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+  }
+
+  .resurrection-timer {
+    font-size: 1.3rem;
+  }
+
+  .vault-fund-panel {
+    padding: 14px 16px;
+    max-width: 100%;
+  }
+
+  .vault-fund-address {
+    font-size: 0.5rem;
+  }
+
+  .afterlife-timeline {
+    max-width: 100%;
+  }
+}
+
+/* ===== RESPONSIVE: SMALL PHONES ===== */
+@media (max-width: 480px) {
+  /* Hide brand on very small screens to save space */
+  .topbar-brand {
+    display: none;
+  }
+
+  #topbar {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+
+  .heartbeat-counter {
+    font-size: 1.2rem;
+  }
+
+  .heartbeat-total {
+    font-size: 0.6rem;
+  }
+
+  .phase-pill {
+    padding: 2px 6px;
+    font-size: 0.45rem;
+  }
+
+  /* ECG even smaller */
+  #ecgStrip {
+    height: 36px;
+  }
+
+  /* Tighter journal entries */
+  .journal-entry {
+    padding: 10px 10px 10px 12px;
+    border-left-width: 2px;
+  }
+
+  .journal-content {
+    font-size: 0.75rem;
+    line-height: 1.6;
+  }
+
+  .journal-phase-name {
+    font-size: 0.5rem;
+  }
+
+  .journal-hb {
+    font-size: 0.5rem;
+  }
+
+  .journal-footer {
+    font-size: 0.5rem;
+  }
+
+  .section-label {
+    padding: 8px 10px 5px;
+    font-size: 0.6rem;
+  }
+
+  .mobile-tab {
+    font-size: 0.5rem;
+    padding: 8px 0;
+  }
+
+  /* Bottom bar minimal */
+  #bottomBar {
+    padding: 5px 8px;
+    gap: 6px;
+  }
+
+  .audio-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
 </style>
 </head>
 <body>
@@ -1428,6 +1748,14 @@ body.resurrecting {
 
 <!-- ===== TWO-COLUMN BODY ===== -->
 <div id="mainBody">
+
+  <!-- Mobile tab bar (hidden on desktop) -->
+  <div class="mobile-tabs" id="mobileTabs">
+    <div class="mobile-tabs-inner">
+      <div class="mobile-tab active" data-tab="journal">JOURNAL</div>
+      <div class="mobile-tab" data-tab="vitals">VITALS</div>
+    </div>
+  </div>
 
   <!-- LEFT: Journal -->
   <div id="journalCol">
@@ -1640,6 +1968,29 @@ let timeAliveInterval = null;
 
 // ============ DOM ============
 const $ = id => document.getElementById(id);
+
+// ============ MOBILE TABS ============
+(function initMobileTabs() {
+  var tabs = document.getElementById('mobileTabs');
+  if (!tabs) return;
+  tabs.addEventListener('click', function(e) {
+    var tab = e.target.closest('.mobile-tab');
+    if (!tab) return;
+    var target = tab.getAttribute('data-tab');
+    var allTabs = tabs.querySelectorAll('.mobile-tab');
+    allTabs.forEach(function(t) { t.classList.remove('active'); });
+    tab.classList.add('active');
+    var journal = document.getElementById('journalCol');
+    var sidebar = document.getElementById('sidebarCol');
+    if (target === 'journal') {
+      journal.classList.remove('mobile-hidden');
+      sidebar.classList.remove('mobile-visible');
+    } else {
+      journal.classList.add('mobile-hidden');
+      sidebar.classList.add('mobile-visible');
+    }
+  });
+})();
 
 // ============ MARKDOWN (lightweight) ============
 function md(text) {
