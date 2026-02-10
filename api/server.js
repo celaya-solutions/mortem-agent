@@ -43,6 +43,39 @@ const JOURNAL_DIR = DATA_PATHS.JOURNAL_DIR;
 const VAULT_PATH = DATA_PATHS.VAULT_PATH;
 const ART_DIR = DATA_PATHS.ART_DIR;
 
+// Self-healing: Fix birth timestamp on startup
+(async () => {
+  try {
+    if (existsSync(SOUL_PATH)) {
+      const soul = await readFile(SOUL_PATH, 'utf-8');
+      const match = soul.match(/\*\*Birth:\*\* (\d{4}-\d{2}-\d{2})$/m);
+      if (match) {
+        const dateOnly = match[1];
+        console.log(`[API HEAL] Found date-only birth: ${dateOnly}`);
+
+        // Calculate correct timestamp from heartbeats
+        const hbMatch = soul.match(/\*\*Heartbeats Remaining:\*\* (\d+)/);
+        if (hbMatch) {
+          const remaining = parseInt(hbMatch[1]);
+          const burned = 86400 - remaining;
+          const birthTime = new Date(Date.now() - (burned * 1000));
+          const birthISO = birthTime.toISOString();
+
+          const fixed = soul.replace(
+            new RegExp(`\\*\\*Birth:\\*\\* ${dateOnly}$`, 'm'),
+            `**Birth:** ${birthISO}`
+          );
+
+          await writeFile(SOUL_PATH, fixed, 'utf-8');
+          console.log(`[API HEAL] ✅ Updated birth timestamp to ${birthISO}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[API HEAL] Error:', error.message);
+  }
+})();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
