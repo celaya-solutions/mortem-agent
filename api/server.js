@@ -7,7 +7,7 @@
 import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
-import { readFile, readdir, watch } from 'fs/promises';
+import { readFile, writeFile, readdir, watch } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -62,6 +62,28 @@ app.use(express.static(DASHBOARD_DIR));
 
 // Store connected WebSocket clients
 let wsClients = [];
+
+/**
+ * POST /api/admin/fix-birth - One-time fix for birth timestamp
+ */
+app.post('/api/admin/fix-birth', async (req, res) => {
+  try {
+    const soul = await readFile(SOUL_PATH, 'utf-8');
+    const fixed = soul.replace(
+      /\*\*Birth:\*\* 2026-02-10$/m,
+      '**Birth:** 2026-02-10T14:51:31.959Z'
+    );
+
+    if (fixed === soul) {
+      return res.json({ ok: false, message: 'No changes needed' });
+    }
+
+    await writeFile(SOUL_PATH, fixed, 'utf-8');
+    res.json({ ok: true, message: 'Birth timestamp updated successfully' });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
 
 /**
  * GET /api/status - Current MORTEM status
