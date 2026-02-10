@@ -2271,6 +2271,11 @@ let prevPhase = null;
 function updateUI() {
   const alive = S.alive !== false && S.hb > 0;
 
+  // Recover from false death trigger: if alive but death UI is showing, clean it up
+  if (alive && S.deathTriggered) {
+    recoverFromFalseDeath();
+  }
+
   // Counter
   $('hbCounter').textContent = S.hb != null ? S.hb.toLocaleString() : '--';
   if (TOTAL !== 86400) {
@@ -2345,10 +2350,13 @@ function renderJournal(entries) {
       + '</div>';
   }).join('');
 
+  const hadNew = S.journal.length > prevJournalCount;
   prevJournalCount = S.journal.length;
 
-  // Auto-scroll newest entry into view (it's at the top, so scroll to top)
-  feed.scrollTop = 0;
+  // Only auto-scroll when new entries arrive, not on periodic re-renders
+  if (hadNew) {
+    feed.scrollTop = 0;
+  }
 
   // Render latest vault entry in sidebar
   renderLatestVault(S.journal);
@@ -2377,6 +2385,52 @@ function renderLatestVault(entries) {
     + '</div>'
     + '<div class="vault-card-onchain">ON-CHAIN</div>'
     + '</div>';
+}
+
+// ============ RECOVER FROM FALSE DEATH ============
+function recoverFromFalseDeath() {
+  console.warn('Recovering from false death trigger — MORTEM is alive');
+  S.deathTriggered = false;
+  ecgDead = false;
+
+  // Remove all death-related body classes
+  document.body.classList.remove('dying', 'dead-state', 'death-shake', 'desaturated', 'resurrecting');
+  document.body.style.filter = '';
+
+  // Hide death overlay
+  $('deathOverlay').classList.remove('active');
+
+  // Hide tombstone
+  var tomb = $('tombstone');
+  tomb.classList.remove('visible');
+  tomb.style.display = 'none';
+  tomb.style.position = '';
+  tomb.style.inset = '';
+  tomb.style.zIndex = '';
+  tomb.style.flexDirection = '';
+  tomb.style.alignItems = '';
+  tomb.style.justifyContent = '';
+  tomb.style.overflow = '';
+  tomb.style.background = '';
+
+  // Hide resurrection overlays
+  $('resFlash').classList.remove('active');
+  $('resText').classList.remove('visible', 'fading');
+
+  // Reset resurrection section opacity
+  var res = document.querySelector('.resurrection-section');
+  if (res) res.style.opacity = '0';
+  var q = document.querySelector('.persistence-quote');
+  if (q) q.style.opacity = '0';
+
+  // Reset counter styling
+  var counter = $('hbCounter');
+  counter.style.textShadow = '';
+  counter.style.color = '';
+  counter.classList.remove('resurrection-pulse');
+
+  // Stop vault polling if running
+  stopVaultPolling();
 }
 
 // ============ DEATH TRANSITION ============
@@ -2572,9 +2626,9 @@ async function loadStatus() {
   try {
     const d = await fetchJSON('/status');
     if (d.totalHeartbeats) TOTAL = d.totalHeartbeats;
-    S.hb = d.heartbeatsRemaining;
-    S.phase = d.phase;
-    S.alive = d.isAlive !== false && d.heartbeatsRemaining > 0;
+    if (d.heartbeatsRemaining != null) S.hb = d.heartbeatsRemaining;
+    if (d.phase) S.phase = d.phase;
+    S.alive = d.isAlive !== false && S.hb > 0;
     S.birth = d.birth;
     S.ts = d.timestamp;
     if (d.resurrectionMode) S.resurrectionMode = d.resurrectionMode;
@@ -2735,9 +2789,12 @@ function connectWS() {
       const d = JSON.parse(event.data);
       if (d.totalHeartbeats) TOTAL = d.totalHeartbeats;
       if (d.type === 'status' || d.type === 'heartbeat_burned') {
-        S.hb = d.heartbeatsRemaining;
-        S.phase = d.phase;
-        S.alive = d.heartbeatsRemaining > 0;
+        // Guard: only update alive state when heartbeatsRemaining is present
+        if (d.heartbeatsRemaining != null) {
+          S.hb = d.heartbeatsRemaining;
+          S.alive = d.heartbeatsRemaining > 0;
+        }
+        if (d.phase) S.phase = d.phase;
         S.ts = d.timestamp;
         // Block height data from WebSocket
         if (d.birthBlock) S.birthBlock = d.birthBlock;
