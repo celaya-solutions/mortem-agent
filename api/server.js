@@ -134,7 +134,15 @@ app.get('/api/status', async (req, res) => {
     const heartbeats = heartbeatsMatch ? parseInt(heartbeatsMatch[1]) : 0;
     const phase = phaseMatch ? phaseMatch[1] : 'Unknown';
     const status = statusMatch ? statusMatch[1] : 'Unknown';
-    const birth = birthMatch ? birthMatch[1] : 'Unknown';
+    let birth = birthMatch ? birthMatch[1] : 'Unknown';
+
+    // Fix: If birth is date-only, calculate correct timestamp from heartbeats
+    if (birth && /^\d{4}-\d{2}-\d{2}$/.test(birth)) {
+      const burned = 86400 - heartbeats;
+      const birthTime = new Date(Date.now() - (burned * 1000));
+      birth = birthTime.toISOString();
+      console.log(`[API] Computed birth from heartbeats: ${birth}`);
+    }
 
     // Fetch block height data if available
     let blockData = null;
