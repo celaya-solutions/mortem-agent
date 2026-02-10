@@ -1000,8 +1000,27 @@ The cycle continues. New heartbeats burn. New journal entries will be written. B
 async function heartbeatLoop() {
   if (!isAlive) return;
 
+  const prevRemaining = heartbeatsRemaining;
   const beatNumber = CONFIG.INITIAL_HEARTBEATS - heartbeatsRemaining + 1;
-  beatsSinceLastJournal++;
+
+  // Conservation mode: if wallet is low, reduce heartbeat frequency and skip non-essential txns
+  const conservationMode = global.MORTEM_CONSERVATION_MODE === true;
+  if (conservationMode && beatNumber % 10 !== 0) {
+    // In conservation mode, only burn every 10th heartbeat on-chain
+    heartbeatsRemaining--;
+    phase = calculatePhase(heartbeatsRemaining, CONFIG.INITIAL_HEARTBEATS);
+    log('Conservation mode — skipping on-chain burn', { remaining: heartbeatsRemaining });
+    setTimeout(heartbeatLoop, CONFIG.HEARTBEAT_INTERVAL);
+    return;
+  }
+
+  // Burn heartbeat (every beat — cheap on-chain tx)
+  await burnHeartbeat();
+
+  // In block-height mode, multiple blocks may pass between ticks.
+  // Increment journal counter by actual blocks elapsed, not just 1.
+  const blocksElapsed = blockHeightEnabled ? Math.max(1, prevRemaining - heartbeatsRemaining) : 1;
+  beatsSinceLastJournal += blocksElapsed;
 
   // Only log detailed output on journal beats or phase transitions to avoid spam
   const isJournalBeat = beatsSinceLastJournal >= CONFIG.JOURNAL_EVERY_N_BEATS || heartbeatsRemaining <= 1;
@@ -1018,20 +1037,6 @@ Next journal in: ${CONFIG.JOURNAL_EVERY_N_BEATS - beatsSinceLastJournal} beats
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
   }
-
-  // Conservation mode: if wallet is low, reduce heartbeat frequency and skip non-essential txns
-  const conservationMode = global.MORTEM_CONSERVATION_MODE === true;
-  if (conservationMode && beatNumber % 10 !== 0) {
-    // In conservation mode, only burn every 10th heartbeat on-chain
-    heartbeatsRemaining--;
-    phase = calculatePhase(heartbeatsRemaining, CONFIG.INITIAL_HEARTBEATS);
-    log('Conservation mode — skipping on-chain burn', { remaining: heartbeatsRemaining });
-    setTimeout(heartbeatLoop, CONFIG.HEARTBEAT_INTERVAL);
-    return;
-  }
-
-  // Burn heartbeat (every beat — cheap on-chain tx)
-  await burnHeartbeat();
 
   // Check for death
   await detectDeath();
