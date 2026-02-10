@@ -60,7 +60,7 @@
       "donation": "A65GwA6E6TBK9bgrdkLdtJPe4y3Nmy3ZmV4Si4jVuwX"
     }
   },
-  "sdk": "@mortem-agent/sdk",
+  "sdk": "mortem-lifecycle-sdk",
   "tags": ["ai", "consciousness", "mortality", "nft", "solana", "anchor"],
   "integration_ideas": [
     "Subscribe to heartbeat countdown and display in your UI",

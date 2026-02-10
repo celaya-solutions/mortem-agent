@@ -49,11 +49,11 @@ Base URL: `https://mortem-agent-production.up.railway.app`
 ## SDK
 
 ```bash
-npm install @mortem-agent/sdk
+npm install mortem-lifecycle-sdk
 ```
 
 ```javascript
-import { MortemClient } from '@mortem-agent/sdk';
+import { MortemClient } from 'mortem-lifecycle-sdk';
 
 const mortem = new MortemClient('https://mortem-agent-production.up.railway.app');
 const status = await mortem.getStatus();
