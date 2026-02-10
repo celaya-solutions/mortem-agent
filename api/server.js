@@ -616,9 +616,13 @@ async function sendStatusToClient(ws) {
       };
     } catch {}
 
+    // Only send status if we successfully parsed heartbeats — avoid sending 0
+    // during partial reads of soul.md which would falsely trigger death on clients
+    if (!heartbeatsMatch) return;
+
     ws.send(JSON.stringify({
       type: 'status',
-      heartbeatsRemaining: heartbeatsMatch ? parseInt(heartbeatsMatch[1]) : 0,
+      heartbeatsRemaining: parseInt(heartbeatsMatch[1]),
       phase: phaseMatch ? phaseMatch[1] : 'Unknown',
       ...blockData,
       timestamp: new Date().toISOString(),
@@ -666,9 +670,12 @@ async function watchSoulFile() {
           };
         } catch {}
 
+        // Skip broadcast if regex failed — partial read during file write
+        if (!heartbeatsMatch) continue;
+
         broadcast({
           type: 'heartbeat_burned',
-          heartbeatsRemaining: heartbeatsMatch ? parseInt(heartbeatsMatch[1]) : 0,
+          heartbeatsRemaining: parseInt(heartbeatsMatch[1]),
           phase: phaseMatch ? phaseMatch[1] : 'Unknown',
           ...blockData,
           timestamp: new Date().toISOString(),

@@ -2444,25 +2444,29 @@ function triggerDeath() {
   document.body.classList.add('death-shake');
   setTimeout(() => document.body.classList.remove('death-shake'), 600);
 
-  setTimeout(() => playFlatline(), 300);
+  setTimeout(() => { if (!S.deathTriggered) return; playFlatline(); }, 300);
 
   setTimeout(() => {
+    if (!S.deathTriggered) return;
     $('hbCounter').textContent = '0';
     $('hbCounter').style.textShadow = '-4px 0 var(--emergency), 4px 0 #2F4A9A';
   }, 600);
 
-  setTimeout(() => document.body.classList.add('dying'), 1500);
+  setTimeout(() => { if (!S.deathTriggered) return; document.body.classList.add('dying'); }, 1500);
 
   setTimeout(() => {
+    if (!S.deathTriggered) return;
     document.body.classList.add('dead-state');
     document.body.classList.add('desaturated');
   }, 3000);
 
   setTimeout(() => {
+    if (!S.deathTriggered) return;
     $('deathOverlay').classList.add('active');
   }, 4000);
 
   setTimeout(() => {
+    if (!S.deathTriggered) return;
     updateTombstone();
     $('tombstone').classList.add('visible');
     $('tombstone').style.position = 'fixed';
@@ -2477,19 +2481,19 @@ function triggerDeath() {
   }, 5500);
 
   setTimeout(() => {
+    if (!S.deathTriggered) return;
     const res = document.querySelector('.resurrection-section');
     if (res) res.style.opacity = '1';
-    // Start vault polling when death screen shows in community mode
     if (S.resurrectionMode === 'community') {
       startVaultPolling();
     }
-    // Load and render afterlife timeline
     loadLetters().then(() => {
       if (S.letters) renderAfterlifeTimeline(S.letters);
     });
   }, 8000);
 
   setTimeout(() => {
+    if (!S.deathTriggered) return;
     const q = document.querySelector('.persistence-quote');
     if (q) q.style.opacity = '1';
   }, 10000);
