@@ -64,9 +64,9 @@ app.use(express.static(DASHBOARD_DIR));
 let wsClients = [];
 
 /**
- * POST /api/admin/fix-birth - One-time fix for birth timestamp
+ * GET /api/admin/fix-birth - One-time fix for birth timestamp
  */
-app.post('/api/admin/fix-birth', async (req, res) => {
+app.get('/api/admin/fix-birth', async (req, res) => {
   try {
     const soul = await readFile(SOUL_PATH, 'utf-8');
     const fixed = soul.replace(
@@ -75,13 +75,13 @@ app.post('/api/admin/fix-birth', async (req, res) => {
     );
 
     if (fixed === soul) {
-      return res.json({ ok: false, message: 'No changes needed' });
+      return res.json({ ok: false, message: 'No changes needed - birth timestamp already correct or pattern not found' });
     }
 
     await writeFile(SOUL_PATH, fixed, 'utf-8');
-    res.json({ ok: true, message: 'Birth timestamp updated successfully' });
+    res.json({ ok: true, message: 'Birth timestamp updated successfully', path: SOUL_PATH });
   } catch (error) {
-    res.status(500).json({ ok: false, error: error.message });
+    res.status(500).json({ ok: false, error: error.message, path: SOUL_PATH });
   }
 });
 
