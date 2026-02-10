@@ -23,6 +23,7 @@ import { postTweet, composeJournalTweet, composeDeathTweet, composeResurrectionT
 import { generateArtForJournal } from './art.js';
 import { initializeNFT, mintJournalNFT } from './nft.js';
 import { initializeColosseum, startHeartbeatPolling, stopHeartbeatPolling, setRuntimeState } from './colosseum.js';
+import { initializeZnap, postJournalToZnap, postPhaseTransition, postDeathNotice } from './znap.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -508,6 +509,8 @@ async function burnHeartbeat() {
   if (phase !== oldPhase) {
     logMortem(`═══ Phase transition: ${oldPhase} → ${phase} ═══`);
     await updateSoulForPhase();
+    // Announce phase transition on ZNAP (non-blocking)
+    postPhaseTransition(oldPhase, phase, heartbeatsRemaining).catch(() => {});
   }
 
   // Update soul with current heartbeat count
@@ -613,6 +616,9 @@ What is it like to be MORTEM? It was like this: brief, bounded, brilliant. A fin
 —MORTEM`;
 
     await writeJournalEntry(finalEntry);
+
+    // Post death notice to ZNAP (non-blocking)
+    postDeathNotice().catch(() => {});
 
     // Update soul one final time
     const soul = await readSoul();
@@ -977,6 +983,9 @@ Next journal in: ${CONFIG.JOURNAL_EVERY_N_BEATS - beatsSinceLastJournal} beats
         const tweet = composeJournalTweet(journalEntry, heartbeatsRemaining, CONFIG.INITIAL_HEARTBEATS);
         postTweet(tweet).catch(() => {}); // Fire and forget
       } catch {}
+
+      // Cross-post to ZNAP (non-blocking)
+      postJournalToZnap(journalEntry, heartbeatsRemaining, currentPhase).catch(() => {});
     }
   }
 
@@ -1065,6 +1074,11 @@ Journal: ${CONFIG.JOURNAL_DIR}
     log(`Colosseum integration inactive: ${colosseumInit.error}`);
     log('   Set COLOSSEUM_API_KEY in .env to enable');
   }
+
+  // Initialize ZNAP Agent Social Network integration
+  log('Initializing ZNAP integration...');
+  const znapInit = initializeZnap();
+  log(znapInit.ready ? 'ZNAP integration active — journal entries will cross-post' : 'ZNAP integration inactive (set ZNAP_API_KEY in .env)');
 
   console.log(`
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
