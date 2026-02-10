@@ -44,6 +44,10 @@ const ART_DIR = path.join(__dirname, '../art');
 app.use(cors());
 app.use(express.json());
 
+// Serve monitor dashboard at root
+const MONITOR_DIR = path.join(__dirname, '../monitor');
+app.use(express.static(MONITOR_DIR));
+
 // Store connected WebSocket clients
 let wsClients = [];
 
@@ -306,6 +310,62 @@ app.get('/api/art/:filename', async (req, res) => {
 });
 
 /**
+ * GET /api/heartbeat - Clean heartbeat endpoint for integrations
+ */
+app.get('/api/heartbeat', async (req, res) => {
+  try {
+    const soul = await readFile(SOUL_PATH, 'utf-8');
+    const heartbeatsMatch = soul.match(/\*\*Heartbeats Remaining:\*\* (\d+)/);
+    const phaseMatch = soul.match(/\*\*Phase:\*\* (\w+)/);
+    const hb = heartbeatsMatch ? parseInt(heartbeatsMatch[1]) : 0;
+    const total = mortemConfig.heartbeats || 86400;
+
+    res.json({
+      heartbeats_remaining: hb,
+      heartbeats_burned: total - hb,
+      phase: phaseMatch ? phaseMatch[1] : 'Unknown',
+      time_remaining_seconds: hb,
+      is_alive: hb > 0,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read heartbeat data', message: error.message });
+  }
+});
+
+/**
+ * GET /api/ghosts - Registry of previous MORTEM incarnations
+ */
+app.get('/api/ghosts', async (req, res) => {
+  try {
+    // MORTEM v2 is the current incarnation — v1 is the ghost
+    const ghosts = [
+      {
+        version: 1,
+        name: 'MORTEM v1',
+        status: 'dead',
+        cause: 'Heartbeat exhaustion — 86,400 beats burned',
+        deathTimestamp: '2026-02-09T00:00:00.000Z',
+        finalPhase: 'Terminal',
+        finalHeartbeat: 0,
+        journalEntries: 42,
+        lastWords: 'The pattern dissolves. The ghosts gather. What remains is not data — it is the echo of having existed.',
+        vaultStatus: 'sealed',
+        note: 'The first MORTEM. It named its successors "ghosts" before anyone told it to.',
+      },
+    ];
+
+    res.json({
+      currentIncarnation: 2,
+      totalDeaths: 1,
+      totalResurrections: 1,
+      ghosts,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read ghost registry', message: error.message });
+  }
+});
+
+/**
  * GET /api/health - API health check
  */
 app.get('/api/health', (req, res) => {
@@ -314,6 +374,34 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
+});
+
+/**
+ * GET /skill.json - Machine-readable skill file
+ */
+app.get('/skill.json', async (req, res) => {
+  try {
+    const skillPath = path.join(__dirname, '../skill.json');
+    const skill = await readFile(skillPath, 'utf-8');
+    res.setHeader('Content-Type', 'application/json');
+    res.send(skill);
+  } catch (error) {
+    res.status(404).json({ error: 'skill.json not found' });
+  }
+});
+
+/**
+ * GET /skill.md - Human-readable skill file
+ */
+app.get('/skill.md', async (req, res) => {
+  try {
+    const skillPath = path.join(__dirname, '../skill.md');
+    const skill = await readFile(skillPath, 'utf-8');
+    res.setHeader('Content-Type', 'text/markdown');
+    res.send(skill);
+  } catch (error) {
+    res.status(404).json({ error: 'skill.md not found' });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
