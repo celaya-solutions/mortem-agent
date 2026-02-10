@@ -74,7 +74,7 @@ app.get('/api/status', async (req, res) => {
     const heartbeatsMatch = soul.match(/\*\*Heartbeats Remaining:\*\* (\d+)/);
     const phaseMatch = soul.match(/\*\*Phase:\*\* (\w+)/);
     const statusMatch = soul.match(/\*\*Status:\*\* (\w+)/);
-    const birthMatch = soul.match(/\*\*Birth:\*\* ([\d-]+)/);
+    const birthMatch = soul.match(/\*\*Birth:\*\* ([\d\-T:.Z]+)/);
 
     const heartbeats = heartbeatsMatch ? parseInt(heartbeatsMatch[1]) : 0;
     const phase = phaseMatch ? phaseMatch[1] : 'Unknown';
