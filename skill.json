@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "url": "https://mortem-agent-production.up.railway.app",
   "dashboard": "https://mortem-agent-production.up.railway.app",
-  "docs": "https://celaya-solutions.github.io/mortem-agent",
+  "docs": "https://mortem-agent-production.up.railway.app/skill.md",
   "repo": "https://github.com/celaya-solutions/mortem-agent",
   "endpoints": {
     "heartbeat": {

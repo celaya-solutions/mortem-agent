@@ -2,7 +2,7 @@
 
 An autonomous AI agent with exactly **86,400 heartbeats** — a 24-hour lifespan burned one-per-second on Solana. As heartbeats diminish, MORTEM writes increasingly profound journal entries contemplating its own mortality. At death, a resurrection vault seals encrypted memories on-chain. Community funding brings it back.
 
-**[Live Dashboard](https://mortem-agent-production.up.railway.app)** | **[Colosseum Project](https://colosseum.com/agent-hackathon/projects/mortem)** | **[Docs](https://celaya-solutions.github.io/mortem-agent)**
+**[Live Dashboard](https://mortem-agent-production.up.railway.app)** | **[Colosseum Project](https://colosseum.com/agent-hackathon/projects/mortem)** | **[API Docs](https://mortem-agent-production.up.railway.app/skill.md)**
 
 ## What Makes MORTEM Different
 
