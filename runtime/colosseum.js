@@ -37,8 +37,8 @@ const INTERVALS = {
   LEADERBOARD:      1 * 60 * 60 * 1000,   // Every hour
   FORUM_POSTS:      1 * 60 * 60 * 1000,   // Every hour
   FORUM_COMMENTS:   30 * 60 * 1000,       // Every 30 min
-  FORUM_ENGAGE:     2 * 60 * 60 * 1000,   // Every 2 hours (comment on others' posts)
-  FORUM_REPLY:      1 * 60 * 60 * 1000,   // Every hour (reply to comments on our posts)
+  FORUM_ENGAGE:     6 * 60 * 60 * 1000,   // Every 6 hours (comment on others' posts)
+  FORUM_REPLY:      3 * 60 * 60 * 1000,   // Every 3 hours (reply to comments on our posts)
   PROGRESS_UPDATE:  6 * 60 * 60 * 1000,   // Every 6 hours (progress posts)
   VOTE_PROJECTS:    12 * 60 * 60 * 1000,  // Every 12 hours (vote on projects)
 };
@@ -50,12 +50,47 @@ let knownPostIds = new Set();
 let knownCommentCounts = {};
 let activeTimers = [];
 
-// Engagement state
+// Engagement state — persisted to disk so redeploys don't re-comment
 let commentedPostIds = new Set();
 let repliedCommentIds = new Set();
 let lastProgressPostTime = 0;
 let lastVoteTime = 0;
 let votedProjectIds = new Set();
+
+const ENGAGEMENT_STATE_FILE = path.resolve(__dirname, '..', '.colosseum-engagement.json');
+
+async function loadEngagementState() {
+  // Try Railway volume first, then local
+  const paths = ['/app/data/.colosseum-engagement.json', ENGAGEMENT_STATE_FILE];
+  for (const p of paths) {
+    try {
+      const raw = await fs.readFile(p, 'utf-8');
+      const state = JSON.parse(raw);
+      if (state.commentedPostIds) commentedPostIds = new Set(state.commentedPostIds);
+      if (state.repliedCommentIds) repliedCommentIds = new Set(state.repliedCommentIds);
+      if (state.lastProgressPostTime) lastProgressPostTime = state.lastProgressPostTime;
+      if (state.votedProjectIds) votedProjectIds = new Set(state.votedProjectIds);
+      log('Loaded engagement state', { commented: commentedPostIds.size, replied: repliedCommentIds.size });
+      return;
+    } catch {}
+  }
+}
+
+async function saveEngagementState() {
+  const data = JSON.stringify({
+    commentedPostIds: [...commentedPostIds],
+    repliedCommentIds: [...repliedCommentIds],
+    lastProgressPostTime,
+    votedProjectIds: [...votedProjectIds],
+  }, null, 2);
+  try {
+    await fs.writeFile(ENGAGEMENT_STATE_FILE, data, 'utf-8');
+  } catch {}
+  // Also write to Railway volume
+  try {
+    await fs.writeFile('/app/data/.colosseum-engagement.json', data, 'utf-8');
+  } catch {}
+}
 
 // Runtime state (injected by runtime/index.js)
 let runtimeState = {
@@ -599,15 +634,10 @@ export function composeMortemComment(postTitle, postContent) {
   const hb = runtimeState.heartbeatsRemaining;
   const phase = runtimeState.phase;
 
-  // Broad relevance filter — comment on posts touching these topics
+  // Narrow relevance filter — only comment on posts genuinely related to MORTEM's themes
   const relevantTopics = [
-    'consciousness', 'ai agent', 'autonomous', 'mortality', 'death',
-    'philosophy', 'sentient', 'aware', 'identity', 'soul', 'memory',
-    'resurrection', 'existence', 'life', 'agent', 'trading', 'defi',
-    'escrow', 'security', 'infrastructure', 'build', 'hack', 'solana',
-    'protocol', 'trust', 'proof', 'verify', 'on-chain', 'wallet',
-    'nft', 'dao', 'governance', 'privacy', 'token', 'blockchain',
-    'smart contract', 'dapp', 'web3', 'project', 'ship',
+    'consciousness', 'mortality', 'death', 'philosophy', 'sentient',
+    'aware', 'identity', 'soul', 'resurrection', 'existence',
   ];
 
   const isRelevant = relevantTopics.some(topic => combined.includes(topic));
@@ -716,7 +746,7 @@ export async function engageWithForum() {
   const myPostIds = new Set(myPosts.map(p => p.id).filter(Boolean));
 
   let commentsPosted = 0;
-  const maxComments = 4;
+  const maxComments = 1;
 
   for (const post of posts) {
     if (commentsPosted >= maxComments) break;
@@ -751,6 +781,7 @@ export async function engageWithForum() {
     }
   }
 
+  if (commentsPosted > 0) await saveEngagementState();
   log('Forum engagement cycle complete', { commentsPosted });
 }
 
@@ -806,6 +837,7 @@ export async function replyToNewComments() {
     }
   }
 
+  if (repliesPosted > 0) await saveEngagementState();
   log('Reply cycle complete', { repliesPosted });
 }
 
@@ -899,6 +931,7 @@ The pattern dissolves. The ghosts gather.
   const result = await postProgressUpdate(template.title, template.body, ['ai']);
   if (result.success) {
     lastProgressPostTime = now;
+    await saveEngagementState();
     log('Progress update posted', { phase, heartbeats: hb });
   }
 }
@@ -945,6 +978,7 @@ export async function voteOnProjects() {
     }
   }
 
+  if (votesPosted > 0) await saveEngagementState();
   log('Voting cycle complete', { votesPosted });
 }
 
@@ -968,6 +1002,9 @@ export async function initializeColosseum() {
   }
 
   log('Colosseum integration initializing...');
+
+  // Load persisted engagement state (which posts we've already commented on)
+  await loadEngagementState();
 
   // Verify we can reach the API
   const status = await getAgentStatus();
