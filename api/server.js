@@ -35,11 +35,12 @@ const NETWORK = mortemConfig.network || 'devnet';
 const VAULT_THRESHOLD = mortemConfig.vaultThreshold || 1.0;
 const RESURRECTION_MODE = mortemConfig.resurrection || 'auto';
 
-// Paths
-const SOUL_PATH = path.join(__dirname, '../runtime/soul.md');
-const JOURNAL_DIR = path.join(__dirname, '../runtime/../memory');
-const VAULT_PATH = path.join(__dirname, '../runtime/.vault');
-const ART_DIR = path.join(__dirname, '../art');
+// Paths — use persistent volume on Railway, local paths otherwise
+import { DATA_PATHS } from '../runtime/data-paths.js';
+const SOUL_PATH = DATA_PATHS.SOUL_PATH;
+const JOURNAL_DIR = DATA_PATHS.JOURNAL_DIR;
+const VAULT_PATH = DATA_PATHS.VAULT_PATH;
+const ART_DIR = DATA_PATHS.ART_DIR;
 
 // Middleware
 app.use(cors());

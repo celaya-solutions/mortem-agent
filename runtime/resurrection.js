@@ -7,18 +7,19 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 import { Connection, clusterApiUrl, PublicKey } from '@solana/web3.js';
+import { DATA_PATHS } from './data-paths.js';
 
 // Network-aware resurrection delay: 30 days on mainnet, 1 minute on devnet
 let _resConfig = {};
 try {
-  const _cfgRaw = await fs.readFile(path.resolve(process.cwd(), '.mortem-config.json'), 'utf-8');
+  const _cfgRaw = await fs.readFile(DATA_PATHS.CONFIG_PATH, 'utf-8');
   _resConfig = JSON.parse(_cfgRaw);
 } catch {}
 const _network = _resConfig.network || process.env.SOLANA_NETWORK || 'devnet';
 const RESURRECTION_DELAY_MS = _network === 'mainnet-beta'
   ? 30 * 24 * 60 * 60 * 1000   // 30 days
   : 60 * 1000;                   // 1 minute (devnet testing)
-const VAULT_PATH = path.join(process.cwd(), '.vault');
+const VAULT_PATH = DATA_PATHS.VAULT_PATH;
 const ALGORITHM = 'aes-256-cbc';
 
 /**

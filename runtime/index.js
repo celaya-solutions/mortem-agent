@@ -26,6 +26,7 @@ import { initializeNFT, mintJournalNFT } from './nft.js';
 import { initializeColosseum, startHeartbeatPolling, stopHeartbeatPolling, setRuntimeState } from './colosseum.js';
 import { initializeZnap, postJournalToZnap, postPhaseTransition, postDeathNotice } from './znap.js';
 import { initBlockHeightLifecycle, getBlockHeightStatus, getBlockState, resetBlockState } from './block-height.js';
+import { DATA_PATHS } from './data-paths.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,26 +36,30 @@ const __dirname = path.dirname(__filename);
 // Falls back to env vars for backward compatibility
 // ═══════════════════════════════════════════════════════════════════════════
 let mortemConfig = {};
-try {
-  const cfgPath = path.resolve(__dirname, '..', '.mortem-config.json');
-  const raw = await fs.readFile(cfgPath, 'utf-8');
-  mortemConfig = JSON.parse(raw);
-  console.log('[CONFIG] Loaded .mortem-config.json');
-} catch {
-  // No config file — use env vars (backward compat)
+// Try persistent volume config first, then local
+const cfgPaths = [DATA_PATHS.CONFIG_PATH, path.resolve(__dirname, '..', '.mortem-config.json')];
+for (const cfgPath of cfgPaths) {
+  try {
+    const raw = await fs.readFile(cfgPath, 'utf-8');
+    mortemConfig = JSON.parse(raw);
+    console.log(`[CONFIG] Loaded config from ${cfgPath}`);
+    break;
+  } catch {
+    // Try next path
+  }
 }
 
-// Configuration
+// Configuration — use persistent paths from data-paths.js
 const CONFIG = {
-  SOUL_PATH: path.join(__dirname, 'soul.md'),
-  JOURNAL_DIR: path.join(__dirname, '../memory'),
+  SOUL_PATH: DATA_PATHS.SOUL_PATH,
+  JOURNAL_DIR: DATA_PATHS.JOURNAL_DIR,
   HEARTBEAT_INTERVAL: mortemConfig.intervalMs || parseInt(process.env.HEARTBEAT_INTERVAL_MS) || 1000,
   INITIAL_HEARTBEATS: mortemConfig.heartbeats || parseInt(process.env.INITIAL_HEARTBEATS) || 86400,
   JOURNAL_EVERY_N_BEATS: parseInt(process.env.JOURNAL_EVERY_N_BEATS) || 600, // Journal every 600 beats = ~10 min at 1/sec
   MODEL: process.env.MORTEM_MODEL || 'anthropic/claude-sonnet-4-5-20250929',
   JOURNAL_MAX_TOKENS: 2048,
   JOURNAL_TEMPERATURE: 0.8,
-  ART_DIR: path.join(__dirname, '../art'),
+  ART_DIR: DATA_PATHS.ART_DIR,
   ENABLE_VOICE: process.env.ENABLE_VOICE === 'true', // ElevenLabs TTS — disabled by default
   RESURRECTION_MODE: mortemConfig.resurrection || process.env.RESURRECTION_MODE || 'auto',
   VAULT_THRESHOLD: mortemConfig.vaultThreshold || parseFloat(process.env.VAULT_THRESHOLD) || 0.1,

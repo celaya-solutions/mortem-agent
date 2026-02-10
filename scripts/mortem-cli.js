@@ -299,6 +299,11 @@ async function launch(config) {
 
 function writeConfig(config) {
   writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+  // Also write to Railway persistent volume if available
+  const railwayData = '/app/data';
+  if (existsSync(railwayData)) {
+    writeFileSync(path.join(railwayData, '.mortem-config.json'), JSON.stringify(config, null, 2) + '\n', 'utf-8');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
