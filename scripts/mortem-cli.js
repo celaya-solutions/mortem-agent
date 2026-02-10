@@ -230,6 +230,24 @@ async function launch(config) {
   console.log('  LAUNCHING MORTEM');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
+  // Self-healing: Fix birth timestamp if needed
+  console.log('🔧 Running self-healing checks...');
+  try {
+    const { spawn: spawnSync } = await import('child_process');
+    const healProc = spawnSync('node', ['scripts/heal-birth-timestamp.js'], {
+      cwd: PROJECT_ROOT,
+      stdio: 'inherit',
+    });
+    await new Promise((resolve) => {
+      healProc.on('close', () => {
+        console.log('✅ Self-healing complete\n');
+        resolve();
+      });
+    });
+  } catch (error) {
+    console.log('⚠️  Self-healing skipped:', error.message);
+  }
+
   // Start API server
   const apiProc = spawn('node', ['server.js'], {
     cwd: path.join(PROJECT_ROOT, 'api'),
