@@ -12,8 +12,10 @@ sdk/dist/
 .runtime.pid
 .block-state.json
 runtime/.block-state.json
+.colosseum-engagement.json
 logs/
 memory/
+art/*.svg
 
 # Secrets & credentials
 .env
@@ -58,6 +60,44 @@ Mortem_Social*
 .clinerules
 .clawhub/
 skills/
+
+# Hackathon planning / execution docs (internal only)
+48-HOUR-EXECUTION-TRACKER.md
+COLOSSEUM*HACKATHON*.md
+DOMAIN-SETUP.md
+EXECUTE-NOW.md
+FIX-RAILWAY-ENV.md
+FORUM-ENGAGEMENT-BATTLE-PLAN.md
+MORTEM-CLAUDE-CODE-BRIEFING*.md
+MORTEM-HACKATHON-DEPLOYMENT/
+MORTEM-INFRASTRUCTURE-PLAN.md
+READY-TO-POST-FORUM-CONTENT.md
+URGENT-FIXES.md
+competitive-analysis.md
+mortem-dry-run-prompt.md
+mortem-suno-prompts*.md
+mortem-title-cards/
+*.txt
+*.xlsx
+*.log
+check-domain.sh
+start_juniper.sh
+recordings/
+scripts/recordings/
+scripts/start-forum-blitz.js
+
+# Unused music tracks (only dashboard-referenced tracks are committed)
+music/1-demo-submission-soundtrack.mp3
+music/AWARE PHASE 4*
+music/AWARE PHASE 7*
+music/Demo Video*
+music/DONT USE/
+music/MORTEM #1*
+music/MORTEM #3*
+music/MORTEM #7. RESURRECTION -The*
+music/MORTEM #7. RESURRECTION —*
+music/MORTEM #7. RESURRECTION - v2*
+music/MORTEM #8*
 
 # Runtime-generated soul (mutable, should not be committed)
 runtime/soul.md
