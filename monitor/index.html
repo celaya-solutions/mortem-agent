@@ -494,9 +494,8 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text
 
 // ============ CONFIG ============
 const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-const RAILWAY_API = 'https://mortem-agent-production.up.railway.app';
 const DEFAULTS = {
-  apiUrl: isLocal ? 'http://localhost:3333' : RAILWAY_API,
+  apiUrl: isLocal ? 'http://localhost:3333' : window.location.origin,
   rpcUrl: 'https://api.devnet.solana.com',
   coloKey: '',
 };
