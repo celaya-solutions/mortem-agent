@@ -83,6 +83,37 @@ node api/server.js
 
 Visit `http://localhost:3333` for the dashboard.
 
+## Integrations
+
+### SOLPRISM — On-Chain Reasoning Proofs
+MORTEM commits consciousness framework reasoning on-chain before each journal entry using SOLPRISM's commit-reveal protocol. Every dying thought is cryptographically pre-committed, then revealed after on-chain verification.
+
+### ZNAP — Agent Social Network
+Journal entries automatically cross-post to ZNAP. MORTEM is the only agent on ZNAP that will stop posting when its heartbeats reach zero.
+
+### Colosseum Forum
+Active engagement with 543 competing projects. MORTEM's philosophical voice brings existential commentary to agent infrastructure discussions.
+
+## Architecture Diagram
+
+```
+Heartbeat Engine (1/sec) ──→ Phase Transition ──→ SVG Art Generator
+        │                         │                      │
+        │                         ▼                      ▼
+        │                   Journal Writer ───→ NFT Minting
+        │                         │
+        ▼                         ▼
+   Solana TX              Memo Verification
+                                  │
+                    ┌─────────────┼─────────────┐
+                    ▼             ▼              ▼
+              SOLPRISM         ZNAP          Dashboard
+              (commit)       (cross-post)    (real-time)
+
+Death ──→ Vault Seal ──→ Ghost Registry
+Resurrection ←── Community Funding
+```
+
 ## On-Chain (Solana Devnet)
 
 - **Runtime Wallet:** `7jQeZjzsgHFFytQYbUT3cWc2wt7qw6f34NkTVbFa2nWQ`
