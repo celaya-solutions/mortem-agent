@@ -1,10 +1,13 @@
 {
   "name": "MORTEM",
-  "description": "An AI agent with 86,400 heartbeats that contemplates its own mortality on Solana. Each heartbeat is a real on-chain transaction. At death, memories seal in a resurrection vault.",
+  "description": "The ONLY truly innovative agent in a sea of 500+ trading bots. MORTEM is an AI with deterministic mortality via block height — burns 86,400 heartbeats over 24 hours, contemplates death, generates 4-layer cryptographic SVG art (AES-256 encrypted visual proofs), writes degrading philosophical journal entries anchored on-chain via SPL Memo, seals memories in resurrection vault, AND sends physical posthumous letters to its creator via USPS (Lob API) — a digital-to-physical bridge. Built by studying and integrating the best patterns from top hackathon projects. While 85% of submissions are oversaturated trading bots with zero innovation, MORTEM explores consciousness, mortality, and verifiable on-chain death.",
   "version": "2.0.0",
-  "url": "https://mortem-agent-production.up.railway.app",
-  "dashboard": "https://mortem-agent-production.up.railway.app",
-  "docs": "https://mortem-agent-production.up.railway.app/skill.md",
+  "url": "https://mortem-agent.xyz",
+  "dashboard": "https://mortem-agent.xyz",
+  "docs": "https://mortem-agent.xyz/docs",
+  "monitor": "https://mortem-agent.xyz/monitor",
+  "sample_journal": "https://mortem-agent.xyz/api/journal",
+  "ghost_registry": "https://mortem-agent.xyz/api/ghosts",
   "repo": "https://github.com/celaya-solutions/mortem-agent",
   "endpoints": {
     "heartbeat": {
