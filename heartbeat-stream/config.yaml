@@ -27,3 +27,7 @@ data_file: "/Users/chriscelaya/Desktop/MORTEM/christophers-mortem-integration/he
 
 # HealthKit MCP endpoint (when data_source is "healthkit")
 healthkit_endpoint: "http://localhost:8080"
+
+# Art generation — The Augmented Heart SVGs
+art_every_n_beats: 50
+art_output_dir: "art"

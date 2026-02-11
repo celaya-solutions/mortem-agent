@@ -429,6 +429,20 @@ def main():
     last_sig = None
     last_bpm = None
     start_time = time.time()
+    bpm_history = []  # Track recent BPM for art generation
+
+    # Art generation setup
+    art_interval = config.get("art_every_n_beats", 50)
+    art_dir = Path(__file__).parent / config.get("art_output_dir", "art")
+    art_dir.mkdir(exist_ok=True)
+    art_count = 0
+    try:
+        from human_art import generate_human_art
+        art_enabled = True
+        log.info(f"Human art generation enabled. Every {art_interval} beats → {art_dir}")
+    except ImportError:
+        art_enabled = False
+        log.warning("human_art.py not found — art generation disabled")
 
     # Graceful shutdown
     running = True
@@ -477,6 +491,31 @@ def main():
                     log.info(f"Beat #{total_beats}: {bpm_data['bpm']} BPM | TX: {sig[:20]}...")
                 else:
                     log.warning(f"Beat #{total_beats}: {bpm_data['bpm']} BPM | TX FAILED")
+
+            # Track BPM history for art generation
+            bpm_history.append(bpm_data["bpm"])
+            if len(bpm_history) > 100:
+                bpm_history = bpm_history[-100:]
+
+            # Generate art every N beats
+            if art_enabled and total_beats % art_interval == 0 and status == "alive":
+                try:
+                    art_result = generate_human_art(
+                        bpm=bpm_data["bpm"],
+                        timestamp=bpm_data["timestamp"],
+                        source=bpm_data.get("source", "Apple Watch"),
+                        watch_id=bpm_data.get("watch_id", 1),
+                        total_beats_recorded=total_beats,
+                        bpm_history=bpm_history[-50:],
+                        tx_signature=last_sig or "",
+                    )
+                    art_path = art_dir / art_result["filename"]
+                    with open(art_path, "w") as f:
+                        f.write(art_result["svg"])
+                    art_count += 1
+                    log.info(f"Art #{art_count}: {art_result['filename']} [{art_result['state']}]")
+                except Exception as art_err:
+                    log.warning(f"Art generation failed (non-fatal): {art_err}")
 
             # Dashboard
             print_dashboard(

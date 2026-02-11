@@ -215,6 +215,21 @@ a:hover{text-decoration:underline}
 .overlay-sig a{color:var(--text-dim)}
 .overlay-sig a:hover{color:var(--blue)}
 
+/* ===== HUMAN ART GALLERY ===== */
+.art-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.art-card{
+  background:var(--bg2);border:1px solid #222;padding:.8rem;cursor:pointer;
+  transition:border-color .2s;
+}
+.art-card:hover{border-color:var(--red-dim)}
+.art-card img,.art-card object{width:100%;height:auto;display:block}
+.art-card-meta{
+  display:flex;justify-content:space-between;margin-top:.5rem;
+  font-size:.8rem;color:var(--text-dim);
+}
+.art-card-state{color:var(--red);font-weight:bold;text-transform:uppercase}
+.art-loading{color:var(--text-dim);font-style:italic;padding:1rem;text-align:center}
+
 /* Make witness entries and TX items clickable */
 .witness-entry{cursor:pointer;transition:border-color .2s}
 .witness-entry:hover{border-color:var(--blue-dim)}
@@ -293,6 +308,14 @@ a:hover{text-decoration:underline}
     <span class="arch-ai">Juniper-MORTEM</span>
     <span class="arch-arrow"> &larr; </span>
     <span class="arch-ai">8 Specialized Agents</span>
+  </div>
+</section>
+
+<!-- HUMAN ART GALLERY — The Augmented Heart -->
+<section class="section">
+  <div class="section-title">The Augmented Heart &mdash; Human Generative Art (6 Hidden Data Layers)</div>
+  <div class="art-gallery" id="human-art-gallery">
+    <div class="art-loading">Loading human art...</div>
   </div>
 </section>
 
@@ -781,6 +804,52 @@ async function pollChain() {
   console.log('[MORTEM] Feed rendered:', chainState.txHistory.length, 'transactions');
 }
 
+/* ----- Human Art Gallery ----- */
+async function fetchHumanArt() {
+  const gallery = document.getElementById('human-art-gallery');
+  try {
+    // Try API first (when running with api server)
+    let files = [];
+    try {
+      const resp = await fetch('/api/human-art');
+      const data = await resp.json();
+      files = data.files || [];
+    } catch (e) {
+      // Fallback: try direct path for static hosting
+      console.log('[MORTEM] API not available for human art, trying static paths');
+    }
+
+    if (files.length === 0) {
+      gallery.innerHTML = '<div class="art-loading">Human art generates every 50 heartbeats. ' +
+        'SVGs contain 6 hidden data layers — steganographic coordinates (0xCAFE), ' +
+        'invisible watermark, HRV in bezier curvature, pacemaker timing in circuit spacing.</div>';
+      return;
+    }
+
+    // Show latest 6
+    const latest = files.slice(0, 6);
+    gallery.innerHTML = latest.map(f => {
+      const stateColors = {
+        resting: 'var(--text-dim)', baseline: 'var(--red)',
+        active: '#EF4444', elevated: '#FF6B6B',
+        anomalous: '#FF0044', gap: '#333',
+      };
+      const color = stateColors[f.state] || 'var(--red)';
+      return `<div class="art-card" onclick="window.open('${f.url}','_blank')">
+        <object type="image/svg+xml" data="${f.url}" style="pointer-events:none"></object>
+        <div class="art-card-meta">
+          <span class="art-card-state" style="color:${color}">${f.state || '?'}</span>
+          <span>#${(f.beatCount || 0).toLocaleString()}</span>
+        </div>
+      </div>`;
+    }).join('');
+    console.log('[MORTEM] Human art gallery rendered:', latest.length, 'pieces');
+  } catch (e) {
+    console.error('[MORTEM] Human art fetch error:', e);
+    gallery.innerHTML = '<div class="art-loading">Art generation active. SVGs with 6 hidden layers.</div>';
+  }
+}
+
 /* ----- Forum Feed ----- */
 const FORUM_API = '/forum-api';
 const MORTEM_POST_IDS = [4587, 4588, 4581, 4583];
@@ -846,6 +915,8 @@ async function fetchForumPosts() {
 /* ----- Main Loop ----- */
 function startApp() {
   renderAgents();
+  fetchHumanArt();
+  setInterval(fetchHumanArt, 120000); // refresh every 2 min
   fetchForumPosts();
   setInterval(fetchForumPosts, 120000); // refresh every 2 min
   const ecg = new ECGWaveform('ecg');

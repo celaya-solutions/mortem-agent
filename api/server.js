@@ -479,6 +479,74 @@ app.get('/api/art/:filename', async (req, res) => {
 });
 
 /**
+ * GET /api/human-art - List all generated human SVG art files
+ */
+const HUMAN_ART_DIR = path.join(__dirname, '..', 'heartbeat-stream', 'art');
+
+app.get('/api/human-art', async (req, res) => {
+  try {
+    if (!existsSync(HUMAN_ART_DIR)) {
+      return res.json({ files: [], message: 'No human art directory yet' });
+    }
+
+    const allFiles = await readdir(HUMAN_ART_DIR);
+    const svgFiles = allFiles
+      .filter(f => f.endsWith('.svg') && f.startsWith('human-'))
+      .sort()
+      .reverse();
+
+    const files = svgFiles.map(f => {
+      // Parse filename: human-{beatCount}-{state}-{hash}.svg
+      const match = f.match(/^human-(\d+)-(\w+)-([a-f0-9]+)\.svg$/);
+      return {
+        filename: f,
+        url: `/api/human-art/${f}`,
+        beatCount: match ? parseInt(match[1]) : null,
+        state: match ? match[2] : null,
+        hash: match ? match[3] : null,
+      };
+    });
+
+    res.json({
+      count: files.length,
+      files,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to list human art files',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/human-art/:filename - Serve a specific human SVG art file
+ */
+app.get('/api/human-art/:filename', async (req, res) => {
+  try {
+    const filename = path.basename(req.params.filename);
+    if (!filename.endsWith('.svg') || !filename.startsWith('human-')) {
+      return res.status(400).json({ error: 'Invalid human art filename' });
+    }
+
+    const filePath = path.join(HUMAN_ART_DIR, filename);
+    if (!existsSync(filePath)) {
+      return res.status(404).json({ error: 'Human art file not found' });
+    }
+
+    const svg = await readFile(filePath, 'utf-8');
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(svg);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to read human art file',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * GET /api/heartbeat - Clean heartbeat endpoint for integrations
  */
 app.get('/api/heartbeat', async (req, res) => {
