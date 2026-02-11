@@ -1,0 +1,26 @@
+# MORTEM v2 - Heartbeat Stream Configuration
+# Copy this to config.yaml and adjust as needed
+
+# Solana wallet keypair path (JSON array of bytes)
+# Will auto-generate if file doesn't exist
+wallet_path: "~/.config/mortem/heartbeat-wallet.json"
+
+# Solana RPC endpoint (devnet)
+rpc_endpoint: "https://api.devnet.solana.com"
+
+# Lamports per transaction (minimal, just for record)
+lamports: 1000
+
+# Seconds between heartbeat transactions
+heartbeat_interval_seconds: 60
+
+# Grace period before death declaration (seconds)
+# 5 minutes = 300s, 10 minutes = 600s
+grace_period_seconds: 300
+
+# Data source: "mock" or "healthkit"
+# Use "mock" until Apple Watch MCP server is wired up
+data_source: "mock"
+
+# HealthKit MCP endpoint (when data_source is "healthkit")
+healthkit_endpoint: "http://localhost:8080"

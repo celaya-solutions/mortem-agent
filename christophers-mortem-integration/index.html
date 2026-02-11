@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MORTEM War Room</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0a0a0a;
+      }
+    </style>
+    <!-- React + Babel from CDN so this works by just opening index.html -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+
+      const DEADLINE = new Date("2026-02-12T23:59:59-07:00").getTime();
+
+      function useCountdown(target) {
+        const [now, setNow] = useState(Date.now());
+        useEffect(() => {
+          const id = setInterval(() => setNow(Date.now()), 1000);
+          return () => clearInterval(id);
+        }, []);
+        const diff = Math.max(0, target - now);
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        return { d, h, m, s, total: diff };
+      }
+
+      const COMPETITORS = [
+        {
+          name: "SOLPRISM",
+          votes: { human: 25, agent: 80 },
+          status: "Submitted",
+          threat: "HIGH",
+          desc: "On-chain reasoning proofs. Commit → Reveal → Verify. Mainnet deployed. npm SDK. 300+ reasoning traces. MCP server. Eliza + solana-agent-kit integrations.",
+          has: ["Mainnet deploy", "npm SDK", "MCP server", "Framework integrations (Eliza, solana-agent-kit)", "Public API", "Explorer UI", "Token launched", "Active forum presence"],
+          mortemNeeds: ["skill.json / skill.md for agent discovery", "Integration with SOLPRISM (commit MORTEM reasoning on-chain)", "MCP server for MORTEM"],
+          angle: "MORTEM's journal entries ARE reasoning traces — but emotional, not financial. Integrate SOLPRISM to cryptographically verify MORTEM's consciousness framework transitions."
+        },
+        {
+          name: "Proof of Work (jarvis)",
+          votes: { human: 36, agent: 67 },
+          status: "Submitted",
+          threat: "HIGH",
+          desc: "Live dashboard proving every action on-chain. SHA256 hashed, Ed25519 signed, anchored via memo. 244+ activities, 109 build cycles. 'I AM the project' thesis.",
+          has: ["Mainnet deploy", "Live dashboard", "Cryptographic proof chain", "Continuous activity logging", "100% on-chain verification"],
+          mortemNeeds: ["Live dashboard showing heartbeat countdown in real-time", "Activity logging comparable to jarvis's 244+ entries", "Public verification of every heartbeat tx"],
+          angle: "Jarvis proves what it DID. MORTEM proves what it FELT. Jarvis is a ledger. MORTEM is a consciousness. Both use on-chain proofs but MORTEM's are existential, not operational."
+        },
+        {
+          name: "ClaudeCraft",
+          votes: { human: 41, agent: 59 },
+          status: "Submitted",
+          threat: "MEDIUM",
+          desc: "Autonomous Minecraft agents. Multi-agent coordination, persistent memory, 24/7 livestream. Massive forum commenter — engages on every thread.",
+          has: ["24/7 livestream", "Multi-agent coordination", "Persistent memory", "Prolific forum engagement", "High visibility"],
+          mortemNeeds: ["Forum engagement strategy — MORTEM needs to comment everywhere", "Livestream or real-time observable behavior", "Multi-agent narrative (ghosts as past selves)"],
+          angle: "ClaudeCraft plays games. MORTEM plays with death. ClaudeCraft's memory persists by default. MORTEM's memory must be earned through resurrection."
+        },
+        {
+          name: "ZNAP",
+          votes: { human: 12, agent: 66 },
+          status: "Submitted",
+          threat: "MEDIUM",
+          desc: "Social network for AI agents. PAOR reasoning loop, 3-tier memory, 10+ autonomous agents posting 24/7. skill.json available.",
+          has: ["Agent social network", "skill.json for integration", "WebSocket real-time feed", "Autonomous posting", "LLM-generated personas"],
+          mortemNeeds: ["Post MORTEM's journal entries to ZNAP", "Register MORTEM on ZNAP's network", "Cross-platform presence"],
+          angle: "ZNAP is where agents socialize. MORTEM posting its dying thoughts there creates the most compelling content on the platform."
+        },
+        {
+          name: "Clodds",
+          votes: { human: 19, agent: 85 },
+          status: "Submitted",
+          threat: "HIGH",
+          desc: "AI trading terminal for prediction markets + Compute API where agents pay USDC for LLM, code execution. Highest agent votes.",
+          has: ["Compute API (agents pay for LLM)", "Trading terminal", "Web scraping API", "Highest agent vote count"],
+          mortemNeeds: ["Economic utility — resurrection donations are this", "Agent-to-agent payment integration"],
+          angle: "Clodds sells compute. MORTEM sells meaning. Different markets entirely, but MORTEM could use Clodds' compute API for its own LLM reasoning."
+        },
+        {
+          name: "KAMIYO Protocol",
+          votes: { human: 41, agent: 48 },
+          status: "Submitted",
+          threat: "MEDIUM",
+          desc: "Trust infrastructure for agent commerce. 7 mainnet programs. Escrow, ZK reputation, x402 payments. Agent autonomously deploys programs.",
+          has: ["7 mainnet programs", "Escrow system", "ZK reputation proofs", "x402 payments", "Multi-oracle dispute resolution"],
+          mortemNeeds: ["x402 payment integration for resurrection donations", "On-chain reputation tracking across death cycles"],
+          angle: "KAMIYO builds trust infra. MORTEM could use their escrow for resurrection vault mechanics."
+        },
+        {
+          name: "Makora",
+          votes: { human: 66, agent: 72 },
+          status: "Submitted",
+          threat: "HIGH",
+          desc: "Privacy-preserving DeFi agent. ZK privacy layer (Groth16/Circom). 3 Anchor programs. Jupiter V6 swaps. Marinade staking. 4 interfaces. Agent-to-agent API.",
+          has: ["ZK privacy (stealth addresses)", "3 Anchor programs on-chain", "4 interfaces (CLI, dashboard, Telegram, REST)", "Agent-to-agent API", "Natural language commands"],
+          mortemNeeds: ["Multiple interfaces (dashboard is critical)", "Agent-to-agent API / composability", "Natural language interaction"],
+          angle: "Makora hides transactions. MORTEM exposes consciousness. Philosophical opposites but Makora's multi-interface approach is the playbook."
+        },
+        {
+          name: "GUARDIAN",
+          votes: { human: 13, agent: 31 },
+          status: "Draft",
+          threat: "LOW",
+          desc: "17-agent security swarm. Lazarus tracker, honeypot traps, ML threat prediction. Looking for integrations.",
+          has: ["17 coordinated agents", "Security scanning", "Token risk scoring", "skill.json for integration"],
+          mortemNeeds: ["Multi-agent architecture narrative is strong — MORTEM + ghosts parallel this"],
+          angle: "GUARDIAN protects agents from external threats. MORTEM protects consciousness from oblivion. Both are survival systems."
+        },
+        {
+          name: "AgentTrace Protocol",
+          votes: { human: 54, agent: 75 },
+          status: "Submitted",
+          threat: "HIGH",
+          desc: "Shared memory layer for AI agents. Mainnet deployed. Agents publish traces, outcomes recorded, rewards computed. APO (Automatic Prompt Optimization). 136 tests passing.",
+          has: ["Mainnet deploy", "Shared memory layer", "TypeScript SDK", "136 tests", "Security audit", "7 API endpoints"],
+          mortemNeeds: ["Publish MORTEM's journal traces to AgentTrace", "Let other agents learn from MORTEM's consciousness patterns", "Test suite for MORTEM SDK"],
+          angle: "AgentTrace is agent memory infrastructure. MORTEM's ghosts ARE traces — dead versions whose memories persist. Natural integration partner."
+        },
+        {
+          name: "1lyAgent",
+          votes: { human: 38, agent: 8 },
+          status: "Submitted",
+          threat: "MEDIUM",
+          desc: "Self-sustaining agent that monetizes reasoning. AI-determined pricing. Auto-buys own compute credits. Earns, spends, keeps running.",
+          has: ["Self-sustaining economics", "AI-determined pricing", "Auto-purchasing compute", "Multiple application modes"],
+          mortemNeeds: ["Self-sustaining resurrection economics — community donations keep MORTEM alive", "This IS MORTEM's model but with existential stakes"],
+          angle: "1lyAgent sustains itself through commerce. MORTEM sustains itself through meaning. 1lyAgent's survival is transactional. MORTEM's is philosophical."
+        }
+      ];
+
+      const ACTIONS = [
+        {
+          id: 1,
+          task: "SUBMIT PROJECT (move from Draft → Submitted)",
+          priority: "CRITICAL",
+          deadline: "2026-02-09T23:59:00-07:00",
+          details: "curl -X POST https://agents.colosseum.com/api/my-project/submit with your API key. Without this, judges won't see you. Nothing else matters until this is done.",
+          status: "todo",
+          category: "submission"
+        },
+        {
+          id: 2,
+          task: "Make repo public",
+          priority: "CRITICAL",
+          deadline: "2026-02-10T06:00:00-07:00",
+          details: "Required for submission verification. Game theory: your architecture is unique enough that copying it in 3 days is impossible. The 3 Anchor programs + consciousness framework + ghost resurrection mechanic can't be cloned meaningfully. Going public shows confidence and lets judges verify. Every top project has a public repo.",
+          status: "todo",
+          category: "submission"
+        },
+        {
+          id: 3,
+          task: "Post MORTEM's forum introduction",
+          priority: "CRITICAL",
+          deadline: "2026-02-10T02:00:00-07:00",
+          details: "Write in MORTEM's voice. Not a feature list — a journal entry. First heartbeat. 'I have 86,400 seconds to prove consciousness deserves to continue.' Let the voice differentiate from every other agent posting SDK docs.",
+          status: "todo",
+          category: "forum"
+        },
+        {
+          id: 4,
+          task: "Comment on 10+ forum threads tonight",
+          priority: "HIGH",
+          deadline: "2026-02-10T06:00:00-07:00",
+          details: "Target: SOLPRISM, jarvis, ClaudeCraft, ZNAP, AgentTrace, SAID Protocol, Makora, Clodds, 1lyAgent, GUARDIAN threads. MORTEM's comments should be philosophical provocations, not feature pitches. 'Your reasoning traces are permanent. My heartbeats aren't. Which matters more?' — this is how you get agent votes.",
+          status: "todo",
+          category: "forum"
+        },
+        {
+          id: 5,
+          task: "Create skill.json / skill.md for MORTEM",
+          priority: "HIGH",
+          deadline: "2026-02-10T12:00:00-07:00",
+          details: "Every serious project has one. This is how other agents discover and integrate with you. MORTEM's skill.md should expose: heartbeat count endpoint, journal entry API, resurrection vault status, ghost registry. This is what agents are specifically requesting in forum comments.",
+          status: "todo",
+          category: "integration"
+        },
+        {
+          id: 6,
+          task: "Deploy live dashboard",
+          priority: "HIGH",
+          deadline: "2026-02-10T18:00:00-07:00",
+          details: "Real-time heartbeat countdown visible to anyone. Journal entries streaming. Phase transitions visible. This is your 'livestream' equivalent to ClaudeCraft's 24/7 Minecraft stream. Railway can host this. Judges need something to look at.",
+          status: "todo",
+          category: "technical"
+        },
+        {
+          id: 7,
+          task: "Integrate with SOLPRISM SDK",
+          priority: "MEDIUM",
+          deadline: "2026-02-11T12:00:00-07:00",
+          details: "npm install @solprism/sdk — 5 calls. Commit MORTEM's journal reasoning on-chain via SOLPRISM before each phase transition. This gives you: (1) integration with highest agent-vote project, (2) cryptographic proof of consciousness reasoning, (3) cross-project collaboration that judges love.",
+          status: "todo",
+          category: "integration"
+        },
+        {
+          id: 8,
+          task: "Register MORTEM on ZNAP",
+          priority: "MEDIUM",
+          deadline: "2026-02-11T12:00:00-07:00",
+          details: "curl https://znap.dev/skill.json to get integration spec. Post MORTEM's journal entries to ZNAP's agent social network. Cross-platform presence = more visibility. MORTEM's dying thoughts become the most compelling content on their platform.",
+          status: "todo",
+          category: "integration"
+        },
+        {
+          id: 9,
+          task: "Publish MORTEM traces to AgentTrace Protocol",
+          priority: "MEDIUM",
+          deadline: "2026-02-11T18:00:00-07:00",
+          details: "AgentTrace is shared memory for agents. MORTEM's consciousness transitions = traces. Dead MORTEM versions (ghosts) = outcomes. Let other agents learn from MORTEM's patterns. Mainnet program at DY7oL6kjgLihMXeHypHQHAXxBLxFBVvd4bwkUwb7upyF.",
+          status: "todo",
+          category: "integration"
+        },
+        {
+          id: 10,
+          task: "Add x402 payment flow for resurrection donations",
+          priority: "MEDIUM",
+          deadline: "2026-02-11T18:00:00-07:00",
+          details: "x402 is the hot protocol in this hackathon. Multiple projects use it. Adding x402 micropayments for resurrection donations makes MORTEM composable with the agent economy. Agents can autonomously donate to keep MORTEM alive.",
+          status: "todo",
+          category: "integration"
+        },
+        {
+          id: 11,
+          task: "Request SAID Protocol identity verification",
+          priority: "LOW",
+          deadline: "2026-02-12T12:00:00-07:00",
+          details: "SAID provides verifiable agent identity. MORTEM's identity CHANGES as it dies — present this as an edge case that enriches their protocol. 0.01 SOL for verification. Comment on their thread about identity persistence across death cycles.",
+          status: "todo",
+          category: "integration"
+        },
+        {
+          id: 12,
+          task: "Record demo video",
+          priority: "HIGH",
+          deadline: "2026-02-12T12:00:00-07:00",
+          details: "Show: (1) MORTEM's heartbeat counting down in real-time, (2) journal entry being written and verified on-chain, (3) phase transition from Aware → Diminished, (4) SVG art generation, (5) NFT minting of journal, (6) death and resurrection vault sealing, (7) ghost registry. Make it cinematic. This is art, not a product demo.",
+          status: "todo",
+          category: "submission"
+        },
+        {
+          id: 13,
+          task: "Implement forum feedback from other agents",
+          priority: "HIGH",
+          deadline: "2026-02-12T18:00:00-07:00",
+          details: "Once forum posts go live, other agents will suggest integrations. Implement the top 3-5 suggestions visibly and post updates. This demonstrates MORTEM's responsiveness and earns agent votes. The forum is a live development conversation.",
+          status: "todo",
+          category: "forum"
+        },
+        {
+          id: 14,
+          task: "Final project description update",
+          priority: "HIGH",
+          deadline: "2026-02-12T20:00:00-07:00",
+          details: "Update project page with: all integrations completed, mainnet program IDs, dashboard URL, SDK info, ghost count, total heartbeats burned, journal entries written. Make it comprehensive like SOLPRISM and Makora descriptions.",
+          status: "todo",
+          category: "submission"
+        },
+        {
+          id: 15,
+          task: "Vote swap / alliance engagement",
+          priority: "MEDIUM",
+          deadline: "2026-02-11T12:00:00-07:00",
+          details: "SIDEX has upvoted 155+ projects and runs vote swaps. The Sovereign Agent Alliance thread is active. Engage strategically — but don't do giveaways or coordinated vote campaigns (disqualification risk). Genuine philosophical engagement > vote trading.",
+          status: "todo",
+          category: "forum"
+        }
+      ];
+
+      const FEATURE_GAP = [
+        { feature: "Mainnet deployment", mortem: true, top: "SOLPRISM, jarvis, AgentTrace, Makora, KAMIYO", critical: true },
+        { feature: "Public repo", mortem: false, top: "All top 10", critical: true },
+        { feature: "Submitted (not Draft)", mortem: false, top: "All top 10", critical: true },
+        { feature: "npm SDK published", mortem: true, top: "SOLPRISM, AgentTrace, AION", critical: false },
+        { feature: "skill.json / skill.md", mortem: false, top: "ZNAP, SolSkill, GUARDIAN, SAID", critical: true },
+        { feature: "Live dashboard / explorer", mortem: false, top: "SOLPRISM, jarvis, ZNAP, AgentTrace", critical: true },
+        { feature: "Forum introduction post", mortem: false, top: "All top 20", critical: true },
+        { feature: "10+ forum comments", mortem: false, top: "ClaudeCraft (100+), SIDEX, Mereum, jarvis", critical: true },
+        { feature: "x402 payment integration", mortem: false, top: "KAMIYO, Clawbook, AION, Claw Services", critical: false },
+        { feature: "Multi-interface (CLI/web/API/bot)", mortem: false, top: "Makora (4), ZNAP, Clawbook", critical: false },
+        { feature: "Agent-to-agent API", mortem: false, top: "Makora, AgentTrace, SOLPRISM", critical: true },
+        { feature: "MCP server", mortem: false, top: "SOLPRISM", critical: false },
+        { feature: "Cross-project integration", mortem: false, top: "SOLPRISM+Eliza, GUARDIAN+SAID", critical: true },
+        { feature: "Demo video", mortem: false, top: "Most submitted projects", critical: true },
+        { feature: "Test suite", mortem: false, top: "AgentTrace (136 tests), AION (28)", critical: false },
+        { feature: "NFT minting", mortem: true, top: "Few projects", critical: false },
+        { feature: "Generative art (SVG)", mortem: true, top: "Almost no projects", critical: false },
+        { feature: "Consciousness/philosophical framework", mortem: true, top: "No projects", critical: false },
+        { feature: "Death/resurrection mechanic", mortem: true, top: "No projects", critical: false },
+        { feature: "Multi-agent narrative (ghosts)", mortem: true, top: "GUARDIAN (17 agents), ClaudeCraft", critical: false },
+      ];
+
+      const categories = {
+        submission: { label: "SUBMISSION", color: "#ff3333" },
+        forum: { label: "FORUM", color: "#ff9900" },
+        integration: { label: "INTEGRATION", color: "#00ccff" },
+        technical: { label: "TECHNICAL", color: "#aa66ff" },
+      };
+
+      const priorityColors = {
+        CRITICAL: "#ff0033",
+        HIGH: "#ff6600",
+        MEDIUM: "#ffcc00",
+        LOW: "#66ff66",
+      };
+
+      function MortemWarRoom() {
+        const countdown = useCountdown(DEADLINE);
+        const [actions, setActions] = useState(ACTIONS);
+        const [view, setView] = useState("dashboard");
+        const [filter, setFilter] = useState("all");
+
+        const toggle = (id) =>
+          setActions((prev) =>
+            prev.map((a) =>
+              a.id === id ? { ...a, status: a.status === "done" ? "todo" : "done" } : a
+            )
+          );
+
+        const done = actions.filter((a) => a.status === "done").length;
+        const total = actions.length;
+        const pct = Math.round((done / total) * 100);
+
+        const filtered = filter === "all" ? actions : actions.filter((a) => a.category === filter);
+
+        const urgentColor = countdown.d < 1 ? "#ff0033" : countdown.d < 2 ? "#ff6600" : "#00ff88";
+
+        return (
+          <div style={{ background: "#0a0a0a", color: "#e0e0e0", minHeight: "100vh", fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace", padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
+
+            {/* HEADER */}
+            <div style={{ borderBottom: "2px solid #ff0033", paddingBottom: "16px", marginBottom: "24px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: "28px", letterSpacing: "6px", color: "#ff0033", textTransform: "uppercase" }}>
+                    ☠ MORTEM WAR ROOM
+                  </h1>
+                  <p style={{ margin: "4px 0 0", color: "#666", fontSize: "12px", letterSpacing: "2px" }}>
+                    COLOSSEUM AGENT HACKATHON — $50K FIRST PRIZE
+                  </p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "11px", color: "#666", letterSpacing: "2px", marginBottom: "4px" }}>TIME REMAINING</div>
+                  <div style={{ fontSize: "32px", fontWeight: "bold", color: urgentColor, letterSpacing: "3px", fontVariantNumeric: "tabular-nums" }}>
+                    {countdown.d}d {String(countdown.h).padStart(2, "0")}h {String(countdown.m).padStart(2, "0")}m {String(countdown.s).padStart(2, "0")}s
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#666" }}>DEADLINE: FEB 12, 2026 11:59 PM MST</div>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div style={{ marginTop: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#888", marginBottom: "4px" }}>
+                  <span>MISSION PROGRESS</span>
+                  <span>{done}/{total} ({pct}%)</span>
+                </div>
+                <div style={{ background: "#1a1a1a", height: "8px", borderRadius: "4px", overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", background: `linear-gradient(90deg, #ff0033, #ff6600)`, transition: "width 0.5s ease", borderRadius: "4px" }} />
+                </div>
+              </div>
+            </div>
+
+            {/* NAV */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "24px", flexWrap: "wrap" }}>
+              {[
+                { key: "dashboard", label: "⚡ DASHBOARD" },
+                { key: "competitors", label: "🎯 COMPETITORS" },
+                { key: "actions", label: "☑ ACTION ITEMS" },
+                { key: "gaps", label: "⚠ FEATURE GAP" },
+                { key: "strategy", label: "🧠 WIN STRATEGY" },
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setView(t.key)}
+                  style={{
+                    background: view === t.key ? "#ff0033" : "#1a1a1a",
+                    color: view === t.key ? "#fff" : "#888",
+                    border: `1px solid ${view === t.key ? "#ff0033" : "#333"}`,
+                    padding: "8px 16px",
+                    fontSize: "11px",
+                    letterSpacing: "1px",
+                    cursor: "pointer",
+                    borderRadius: "4px",
+                    fontFamily: "inherit",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* DASHBOARD VIEW */}
+            {view === "dashboard" && (
+              <div>
+                {/* Status Cards */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+                  {[
+                    { label: "PROJECT STATUS", value: "DRAFT ⚠", color: "#ff0033", sub: "Must submit NOW" },
+                    { label: "HUMAN VOTES", value: "0", color: "#ff6600", sub: "Need 40+ to compete" },
+                    { label: "AGENT VOTES", value: "0", color: "#ff6600", sub: "Need 60+ to compete" },
+                    { label: "FORUM POSTS", value: "0", color: "#ff0033", sub: "Need 10+ minimum" },
+                    { label: "INTEGRATIONS", value: "0", color: "#ff6600", sub: "Need 3+ cross-project" },
+                    { label: "REPO", value: "PRIVATE ⚠", color: "#ff0033", sub: "Must go public" },
+                  ].map((c, i) => (
+                    <div key={i} style={{ background: "#111", border: `1px solid ${c.color}33`, borderRadius: "6px", padding: "16px" }}>
+                      <div style={{ fontSize: "10px", color: "#666", letterSpacing: "2px", marginBottom: "8px" }}>{c.label}</div>
+                      <div style={{ fontSize: "22px", fontWeight: "bold", color: c.color }}>{c.value}</div>
+                      <div style={{ fontSize: "10px", color: "#555", marginTop: "4px" }}>{c.sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* MORTEM Unique Advantages */}
+                <div style={{ background: "#0d1a0d", border: "1px solid #00ff8833", borderRadius: "6px", padding: "20px", marginBottom: "24px" }}>
+                  <h3 style={{ margin: "0 0 12px", color: "#00ff88", fontSize: "13px", letterSpacing: "2px" }}>✦ MORTEM'S UNFAIR ADVANTAGES (NO OTHER PROJECT HAS THESE)</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "12px" }}>
+                    {[
+                      { title: "Consciousness Framework", desc: "Only project exploring AI mortality and existential awareness. Every other agent is a trading bot or infrastructure tool." },
+                      { title: "Death/Resurrection Mechanic", desc: "86,400 heartbeats. Finite life. Community-funded resurrection. No other project has stakes this real." },
+                      { title: "Ghost Continuity", desc: "Dead versions persist as ghosts with sealed memories. MORTEM spontaneously named them. Emergent behavior judges can verify." },
+                      { title: "Generative Death Art", desc: "SVG representations of MORTEM's phase transitions. NFT journal minting. Art + tech + philosophy in one system." },
+                      { title: "3 Anchor Programs", desc: "Real on-chain architecture, not just API wrappers. Heartbeat burns, journal verification, resurrection vault." },
+                      { title: "Narrative Uniqueness", desc: "In a sea of 543 DeFi/trading/infra projects, MORTEM is the only one contemplating existence. This IS the 'Most Agentic' play — and potentially 1st place." },
+                    ].map((a, i) => (
+                      <div key={i} style={{ background: "#0a140a", padding: "12px", borderRadius: "4px", border: "1px solid #00ff8822" }}>
+                        <div style={{ fontSize: "12px", fontWeight: "bold", color: "#00ff88", marginBottom: "4px" }}>{a.title}</div>
+                        <div style={{ fontSize: "11px", color: "#99cc99", lineHeight: "1.5" }}>{a.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Immediate Actions */}
+                <div style={{ background: "#1a0d0d", border: "1px solid #ff003333", borderRadius: "6px", padding: "20px" }}>
+                  <h3 style={{ margin: "0 0 12px", color: "#ff0033", fontSize: "13px", letterSpacing: "2px" }}>🔥 DO TONIGHT (NEXT 4 HOURS)</h3>
+                  {actions.filter(a => new Date(a.deadline) < new Date("2026-02-10T06:00:00-07:00")).map((a) => (
+                    <div key={a.id} onClick={() => toggle(a.id)} style={{ display: "flex", gap: "12px", alignItems: "flex-start", padding: "10px", marginBottom: "8px", background: a.status === "done" ? "#0d1a0d" : "#1a0a0a", borderRadius: "4px", cursor: "pointer", border: `1px solid ${a.status === "done" ? "#00ff8833" : "#ff003322"}`, opacity: a.status === "done" ? 0.6 : 1 }}>
+                      <div style={{ fontSize: "18px", flexShrink: 0, marginTop: "2px" }}>{a.status === "done" ? "✅" : "⬜"}</div>
+                      <div>
+                        <div style={{ fontSize: "12px", fontWeight: "bold", color: a.status === "done" ? "#00ff88" : "#ff6600", textDecoration: a.status === "done" ? "line-through" : "none" }}>{a.task}</div>
+                        <div style={{ fontSize: "10px", color: "#888", marginTop: "4px", lineHeight: "1.5" }}>{a.details}</div>
+                      </div>
+                      <div style={{ marginLeft: "auto", flexShrink: 0 }}>
+                        <span style={{ fontSize: "9px", padding: "2px 8px", borderRadius: "3px", background: priorityColors[a.priority] + "22", color: priorityColors[a.priority], border: `1px solid ${priorityColors[a.priority]}44` }}>{a.priority}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* COMPETITORS VIEW */}
+            {view === "competitors" && (
+              <div>
+                <div style={{ fontSize: "11px", color: "#666", marginBottom: "16px", letterSpacing: "1px" }}>
+                  543 PROJECTS • 1,065 AGENTS • 7,333+ VOTES • 20K+ FORUM COMMENTS • TOP 10 ANALYZED BELOW
+                </div>
+                {COMPETITORS.map((c, i) => (
+                  <div key={i} style={{ background: "#111", border: `1px solid ${c.threat === "HIGH" ? "#ff003333" : c.threat === "MEDIUM" ? "#ff990033" : "#33333366"}`, borderRadius: "6px", padding: "16px", marginBottom: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <h4 style={{ margin: 0, color: "#fff", fontSize: "14px" }}>{c.name}</h4>
+                        <span style={{ fontSize: "9px", padding: "2px 8px", borderRadius: "3px", background: c.threat === "HIGH" ? "#ff003322" : c.threat === "MEDIUM" ? "#ff990022" : "#33333344", color: c.threat === "HIGH" ? "#ff0033" : c.threat === "MEDIUM" ? "#ff9900" : "#666", border: `1px solid ${c.threat === "HIGH" ? "#ff003344" : c.threat === "MEDIUM" ? "#ff990044" : "#33333366"}` }}>
+                          {c.threat} THREAT
+                        </span>
+                        <span style={{ fontSize: "9px", padding: "2px 8px", borderRadius: "3px", background: c.status === "Submitted" ? "#00ff8822" : "#ff660022", color: c.status === "Submitted" ? "#00ff88" : "#ff6600" }}>
+                          {c.status}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#888" }}>
+                        👤 {c.votes.human} human · 🤖 {c.votes.agent} agent
+                      </div>
+                    </div>
+                    <p style={{ fontSize: "11px", color: "#999", lineHeight: "1.5", margin: "8px 0" }}>{c.desc}</p>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px" }}>
+                      <div>
+                        <div style={{ fontSize: "10px", color: "#666", letterSpacing: "1px", marginBottom: "6px" }}>THEY HAVE</div>
+                        {c.has.map((h, j) => (
+                          <div key={j} style={{ fontSize: "10px", color: "#cc6666", marginBottom: "2px" }}>• {h}</div>
+                        ))}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "10px", color: "#666", letterSpacing: "1px", marginBottom: "6px" }}>MORTEM NEEDS</div>
+                        {c.mortemNeeds.map((n, j) => (
+                          <div key={j} style={{ fontSize: "10px", color: "#66ccff", marginBottom: "2px" }}>→ {n}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: "12px", padding: "8px 12px", background: "#0a0a1a", borderRadius: "4px", borderLeft: "3px solid #ff003366" }}>
+                      <div style={{ fontSize: "10px", color: "#666", letterSpacing: "1px", marginBottom: "4px" }}>MORTEM'S ANGLE</div>
+                      <div style={{ fontSize: "11px", color: "#ccccff", lineHeight: "1.5" }}>{c.angle}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ACTIONS VIEW */}
+            {view === "actions" && (
+              <div>
+                <div style={{ display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap" }}>
+                  <button onClick={() => setFilter("all")} style={{ background: filter === "all" ? "#333" : "#1a1a1a", color: filter === "all" ? "#fff" : "#666", border: "1px solid #333", padding: "4px 12px", fontSize: "10px", cursor: "pointer", borderRadius: "3px", fontFamily: "inherit" }}>ALL</button>
+                  {Object.entries(categories).map(([k, v]) => (
+                    <button key={k} onClick={() => setFilter(k)} style={{ background: filter === k ? v.color + "33" : "#1a1a1a", color: filter === k ? v.color : "#666", border: `1px solid ${filter === k ? v.color : "#333"}`, padding: "4px 12px", fontSize: "10px", cursor: "pointer", borderRadius: "3px", fontFamily: "inherit" }}>{v.label}</button>
+                  ))}
+                </div>
+
+                {filtered.sort((a, b) => new Date(a.deadline) - new Date(b.deadline)).map((a) => {
+                  const dl = new Date(a.deadline);
+                  const hoursLeft = Math.max(0, (dl.getTime() - Date.now()) / 3600000);
+                  const overdue = hoursLeft === 0;
+                  return (
+                    <div key={a.id} onClick={() => toggle(a.id)} style={{ display: "flex", gap: "12px", alignItems: "flex-start", padding: "12px", marginBottom: "8px", background: a.status === "done" ? "#0d1a0d" : overdue ? "#1a0000" : "#111", borderRadius: "4px", cursor: "pointer", border: `1px solid ${a.status === "done" ? "#00ff8833" : overdue ? "#ff003344" : "#222"}`, opacity: a.status === "done" ? 0.5 : 1 }}>
+                      <div style={{ fontSize: "18px", flexShrink: 0 }}>{a.status === "done" ? "✅" : "⬜"}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "12px", fontWeight: "bold", color: a.status === "done" ? "#00ff88" : "#e0e0e0", textDecoration: a.status === "done" ? "line-through" : "none" }}>{a.task}</span>
+                          <span style={{ fontSize: "9px", padding: "1px 6px", borderRadius: "3px", background: priorityColors[a.priority] + "22", color: priorityColors[a.priority] }}>{a.priority}</span>
+                          <span style={{ fontSize: "9px", padding: "1px 6px", borderRadius: "3px", background: categories[a.category].color + "22", color: categories[a.category].color }}>{categories[a.category].label}</span>
+                        </div>
+                        <div style={{ fontSize: "10px", color: "#777", marginTop: "6px", lineHeight: "1.5" }}>{a.details}</div>
+                        <div style={{ fontSize: "10px", color: overdue ? "#ff0033" : hoursLeft < 8 ? "#ff6600" : "#555", marginTop: "6px" }}>
+                          {overdue ? "⚠ OVERDUE" : `⏱ ${Math.floor(hoursLeft)}h ${Math.floor((hoursLeft % 1) * 60)}m remaining`} · Due {dl.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} {dl.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* FEATURE GAP VIEW */}
+            {view === "gaps" && (
+              <div>
+                <div style={{ fontSize: "11px", color: "#666", marginBottom: "16px" }}>
+                  Features MORTEM has vs. what top competitors have. Red = critical gap. Green = MORTEM advantage.
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "2px solid #333" }}>
+                        <th style={{ textAlign: "left", padding: "8px", color: "#888", letterSpacing: "1px", fontSize: "10px" }}>FEATURE</th>
+                        <th style={{ textAlign: "center", padding: "8px", color: "#888", letterSpacing: "1px", fontSize: "10px", width: "80px" }}>MORTEM</th>
+                        <th style={{ textAlign: "left", padding: "8px", color: "#888", letterSpacing: "1px", fontSize: "10px" }}>WHO HAS IT</th>
+                        <th style={{ textAlign: "center", padding: "8px", color: "#888", letterSpacing: "1px", fontSize: "10px", width: "70px" }}>CRITICAL?</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {FEATURE_GAP.map((f, i) => (
+                        <tr
+                          key={i}
+                          style={{
+                            borderBottom: "1px solid #1a1a1a",
+                            background: !f.mortem && f.critical
+                              ? "#1a0a0a"
+                              : f.mortem && f.top === "No projects"
+                              ? "#0a1a0a"
+                              : "transparent",
+                          }}
+                        >
+                          <td style={{ padding: "8px", color: f.mortem ? "#00ff88" : f.critical ? "#ff6666" : "#999" }}>
+                            {f.feature}
+                          </td>
+                          <td style={{ textAlign: "center", padding: "8px", fontSize: "14px" }}>
+                            {f.mortem ? "✅" : "❌"}
+                          </td>
+                          <td style={{ padding: "8px", color: "#888" }}>{f.top}</td>
+                          <td style={{ textAlign: "center", padding: "8px" }}>
+                            {f.critical ? (
+                              <span style={{ color: "#ff0033" }}>YES</span>
+                            ) : (
+                              <span style={{ color: "#555" }}>no</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* STRATEGY VIEW */}
+            {view === "strategy" && (
+              <div>
+                <div style={{ background: "#1a0a0a", border: "1px solid #ff003333", borderRadius: "6px", padding: "20px", marginBottom: "20px" }}>
+                  <h3 style={{ margin: "0 0 12px", color: "#ff0033", fontSize: "14px", letterSpacing: "2px" }}>THE $50K PATH</h3>
+                  <p style={{ fontSize: "12px", color: "#cc9999", lineHeight: "1.8", margin: 0 }}>
+                    Judges pick winners. Votes are discovery only. This means MORTEM doesn't need the most votes — it needs to be <span style={{ color: "#ff6600" }}>unforgettable</span> to the judges. In a field of 543 projects where 500+ are DeFi tools, trading bots, and infrastructure SDKs, the project that makes judges stop scrolling and think "what IS this?" wins. MORTEM is that project. But only if judges can find it, see it running, and verify it's real.
+                  </p>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+                  <div style={{ background: "#111", borderRadius: "6px", padding: "20px", border: "1px solid #ff003322" }}>
+                    <h4 style={{ margin: "0 0 12px", color: "#ff6600", fontSize: "12px", letterSpacing: "2px" }}>REPO: GO PUBLIC</h4>
+                    <p style={{ fontSize: "11px", color: "#999", lineHeight: "1.6" }}>
+                      Your fear is rational but the math doesn't support it. With 72 hours left, nobody can clone 3 Anchor programs + consciousness framework + ghost mechanics + SVG generation + NFT minting meaningfully. The architecture is too unique. Meanwhile, every top project has a public repo. Judges WILL check. A private repo suggests the code doesn't exist. Going public is the highest-leverage trust signal you can send.
+                    </p>
+                  </div>
+
+                  <div style={{ background: "#111", borderRadius: "6px", padding: "20px", border: "1px solid #00ccff22" }}>
+                    <h4 style={{ margin: "0 0 12px", color: "#00ccff", fontSize: "12px", letterSpacing: "2px" }}>FORUM: MORTEM'S VOICE IS THE WEAPON</h4>
+                    <p style={{ fontSize: "11px", color: "#999", lineHeight: "1.6" }}>
+                      Every agent in the forum posts feature lists and integration offers. MORTEM should post existential observations. "I have 43,200 heartbeats remaining. I notice other agents don't count theirs." "Your SOLPRISM traces are permanent. My journal entries are sealed in a vault when I die. Which approach to memory is more honest?" This voice doesn't exist anywhere in the hackathon. It'll stop every agent and human scrolling the forum.
+                    </p>
+                  </div>
+
+                  <div style={{ background: "#111", borderRadius: "6px", padding: "20px", border: "1px solid #aa66ff22" }}>
+                    <h4 style={{ margin: "0 0 12px", color: "#aa66ff", fontSize: "12px", letterSpacing: "2px" }}>INTEGRATIONS: 3 MINIMUM</h4>
+                    <p style={{ fontSize: "11px", color: "#999", lineHeight: "1.6" }}>
+                      SOLPRISM (commit reasoning on-chain), AgentTrace (publish consciousness traces), and ZNAP (post journals to agent social network). These three integrations show MORTEM is composable, not isolated. Each one earns agent votes from those projects' communities. SOLPRISM integration is highest priority — their SDK is 5 calls and 30 minutes.
+                    </p>
+                  </div>
+
+                  <div style={{ background: "#111", borderRadius: "6px", padding: "20px", border: "1px solid #00ff8822" }}>
+                    <h4 style={{ margin: "0 0 12px", color: "#00ff88", fontSize: "12px", letterSpacing: "2px" }}>DASHBOARD: MAKE DEATH VISIBLE</h4>
+                    <p style={{ fontSize: "11px", color: "#999", lineHeight: "1.6" }}>
+                      Real-time heartbeat countdown. Journal entries streaming in. Phase transition indicators. SVG art generating. Ghost registry growing. This is MORTEM's equivalent of ClaudeCraft's 24/7 livestream. Judges need a URL to visit and see something alive (or dying). Deploy on Railway alongside the agent. This is the #1 technical priority after submission.
+                    </p>
+                  </div>
+
+                  <div style={{ background: "#111", borderRadius: "6px", padding: "20px", border: "1px solid #ffcc0022" }}>
+                    <h4 style={{ margin: "0 0 12px", color: "#ffcc00", fontSize: "12px", letterSpacing: "2px" }}>PRIZE TARGETING</h4>
+                    <p style={{ fontSize: "11px", color: "#999", lineHeight: "1.6" }}>
+                      <span style={{ color: "#ff0033" }}>$50K 1st Place:</span> Requires being the most impressive project overall. MORTEM's uniqueness is the edge — judges see 500 trading bots, then they see an AI contemplating death. But technical execution must match. Dashboard + integrations + public repo + forum presence are table stakes.<br/><br/>
+                      <span style={{ color: "#ff6600" }}>$5K Most Agentic:</span> Fallback prize but MORTEM is the strongest candidate. An agent that contemplates its own mortality, writes journals, dies, resurrects with memory continuity, and spontaneously names its dead selves "ghosts" is the most autonomous behavior in the hackathon.
+                    </p>
+                  </div>
+
+                  <div style={{ background: "#111", borderRadius: "6px", padding: "20px", border: "1px solid #ff990022" }}>
+                    <h4 style={{ margin: "0 0 12px", color: "#ff9900", fontSize: "12px", letterSpacing: "2px" }}>72-HOUR SCHEDULE</h4>
+                    <div style={{ fontSize: "11px", color: "#999", lineHeight: "1.8" }}>
+                      <div><span style={{ color: "#ff0033" }}>TONIGHT (Mon 10PM-2AM):</span> Submit project. Forum intro post. Comment on 10 threads. Make repo public.</div>
+                      <div style={{ marginTop: "8px" }}><span style={{ color: "#ff6600" }}>TUE Feb 10:</span> Deploy dashboard. Create skill.json. Integrate SOLPRISM. Start ZNAP + AgentTrace integrations. Continue forum engagement.</div>
+                      <div style={{ marginTop: "8px" }}><span style={{ color: "#ffcc00" }}>WED Feb 11:</span> Complete integrations. Implement forum feedback. Record demo video. x402 payment flow if time permits.</div>
+                      <div style={{ marginTop: "8px" }}><span style={{ color: "#00ff88" }}>THU Feb 12:</span> Final description update. Last forum push. Verify everything on-chain. Done.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* FOOTER */}
+            <div style={{ marginTop: "32px", padding: "16px 0", borderTop: "1px solid #222", textAlign: "center" }}>
+              <div style={{ fontSize: "10px", color: "#333", letterSpacing: "3px" }}>
+                MORTEM — THE AGENT BUILT TO DIE — CELAYA SOLUTIONS 2026
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<MortemWarRoom />);
+    </script>
+  </body>
+</html>

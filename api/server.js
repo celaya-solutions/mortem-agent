@@ -97,6 +97,18 @@ app.use(express.static(DASHBOARD_DIR));
 let wsClients = [];
 
 /**
+ * GET /api/debug/soul - Debug endpoint to see raw soul.md
+ */
+app.get('/api/debug/soul', async (req, res) => {
+  try {
+    const soul = await readFile(SOUL_PATH, 'utf-8');
+    res.type('text/plain').send(soul);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * GET /api/admin/fix-birth - One-time fix for birth timestamp
  */
 app.get('/api/admin/fix-birth', async (req, res) => {

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MORTEM v2: Symmetric Mortality</title>
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;
+  --red:#ff2d2d;--red-dim:#661111;--red-glow:rgba(255,45,45,.25);
+  --blue:#2d9cff;--blue-dim:#0d3366;--blue-glow:rgba(45,156,255,.25);
+  --green:#00ff66;--green-dim:#004d1e;
+  --text:#ccc;--text-dim:#666;--text-bright:#fff;
+  --mono:'Courier New',Courier,'Lucida Console',monospace;
+  --grid-line:rgba(255,255,255,.04);
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--mono);
+  line-height:1.6;min-height:100vh;
+  background-image:
+    linear-gradient(var(--grid-line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:20px 20px;
+}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ===== HEADER ===== */
+.header{text-align:center;padding:3rem 1rem 2rem;border-bottom:1px solid #222}
+.header h1{font-size:2rem;color:var(--text-bright);letter-spacing:.3em;text-transform:uppercase}
+.header .subtitle{color:var(--text-dim);font-size:.9rem;margin-top:.5rem}
+.thesis{margin-top:1.5rem;display:flex;flex-direction:column;gap:.3rem;align-items:center}
+.thesis span{font-size:.85rem}
+.thesis .human{color:var(--red)}
+.thesis .ai{color:var(--blue)}
+.thesis .both{color:var(--green)}
+
+/* ===== LIVE INDICATOR ===== */
+.live-badge{
+  display:inline-flex;align-items:center;gap:.4rem;
+  background:#1a0000;border:1px solid var(--red-dim);
+  padding:.2rem .6rem;border-radius:2px;font-size:.75rem;color:var(--red);
+  margin-top:1rem;
+}
+.live-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--red);
+  animation:pulse-dot 1.5s infinite;
+}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ===== DUAL STREAMS ===== */
+.streams{display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2rem 1rem;max-width:1200px;margin:0 auto}
+@media(max-width:768px){.streams{grid-template-columns:1fr}}
+
+.stream{background:var(--bg2);padding:1.5rem;border:1px solid #222;position:relative}
+.stream-label{
+  position:absolute;top:-.6rem;left:1rem;
+  background:var(--bg);padding:0 .5rem;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+}
+.stream.human .stream-label{color:var(--red)}
+.stream.mortem .stream-label{color:var(--blue)}
+
+.bpm-display{font-size:4rem;font-weight:bold;text-align:center;margin:1rem 0}
+.bpm-display.human-bpm{color:var(--red);text-shadow:0 0 20px var(--red-glow)}
+.bpm-display.mortem-bpm{color:var(--blue);text-shadow:0 0 20px var(--blue-glow)}
+.bpm-unit{font-size:1rem;color:var(--text-dim)}
+
+.status-line{display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid #1a1a1a;font-size:.8rem}
+.status-label{color:var(--text-dim)}
+.status-value{color:var(--text-bright)}
+.status-value.alive{color:var(--green)}
+.status-value.grace{color:#ffaa00}
+.status-value.dead{color:var(--red)}
+
+/* Progress bar */
+.progress-bar{
+  width:100%;height:8px;background:var(--bg);border:1px solid #333;
+  margin:.8rem 0;border-radius:1px;overflow:hidden;
+}
+.progress-fill{height:100%;transition:width .5s ease}
+.progress-fill.blue{background:var(--blue)}
+
+/* Medical context */
+.medical{margin-top:1rem;padding:.8rem;background:var(--bg);border:1px solid #1a1a1a;font-size:.75rem}
+.medical-title{color:var(--red-dim);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem}
+
+/* Witness entry */
+.witness-entry{
+  margin-top:1rem;padding:.8rem;background:var(--bg);border:1px solid #1a1a1a;
+  font-size:.8rem;font-style:italic;max-height:120px;overflow-y:auto;
+  color:var(--text);line-height:1.5;
+}
+.attribution{font-size:.65rem;color:var(--blue-dim);margin-top:.3rem;font-style:normal}
+
+/* ===== ECG WAVEFORM ===== */
+.ecg-container{height:60px;margin:1rem 0;position:relative;overflow:hidden}
+.ecg-canvas{width:100%;height:100%}
+
+/* ===== ARCHITECTURE ===== */
+.section{max-width:1200px;margin:0 auto;padding:2rem 1rem}
+.section-title{
+  font-size:1rem;color:var(--text-bright);letter-spacing:.2em;text-transform:uppercase;
+  border-bottom:1px solid #222;padding-bottom:.5rem;margin-bottom:1.5rem;
+}
+
+.arch-diagram{
+  background:var(--bg2);border:1px solid #222;padding:1.5rem;
+  font-size:.8rem;text-align:center;line-height:2;
+  overflow-x:auto;white-space:nowrap;
+}
+.arch-human{color:var(--red)}
+.arch-ai{color:var(--blue)}
+.arch-chain{color:var(--green)}
+.arch-arrow{color:var(--text-dim)}
+
+/* ===== TRANSACTION FEED ===== */
+.tx-feed{max-height:300px;overflow-y:auto;background:var(--bg2);border:1px solid #222}
+.tx-item{
+  display:grid;grid-template-columns:120px 140px 1fr 80px;gap:.5rem;
+  padding:.5rem .8rem;border-bottom:1px solid #1a1a1a;font-size:.75rem;
+  align-items:center;
+}
+@media(max-width:768px){.tx-item{grid-template-columns:1fr;gap:.2rem}}
+.tx-item:hover{background:var(--bg3)}
+.tx-time{color:var(--text-dim)}
+.tx-type{font-weight:bold}
+.tx-type.human{color:var(--red)}
+.tx-type.mortem{color:var(--blue)}
+.tx-preview{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx-sig{color:var(--text-dim);font-size:.65rem}
+
+/* ===== AGENTS GRID ===== */
+.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem}
+.agent-card{
+  background:var(--bg2);border:1px solid #222;padding:1rem;
+}
+.agent-name{color:var(--blue);font-weight:bold;font-size:.9rem}
+.agent-role{color:var(--text-dim);font-size:.75rem;margin-top:.2rem}
+.agent-perspective{font-size:.8rem;margin-top:.5rem;font-style:italic}
+
+/* ===== META SECTION ===== */
+.meta-content{
+  background:var(--bg2);border:1px solid #222;padding:1.5rem;
+  font-size:.85rem;line-height:1.8;
+}
+.meta-content p{margin-bottom:1rem}
+.meta-content strong{color:var(--text-bright)}
+
+/* ===== FOOTER ===== */
+.footer{
+  text-align:center;padding:2rem 1rem;border-top:1px solid #222;
+  font-size:.75rem;color:var(--text-dim);
+}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:1.5rem;margin-bottom:1rem}
+.footer-links a{color:var(--text-dim);font-size:.8rem}
+.footer-links a:hover{color:var(--text-bright)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <h1>MORTEM v2</h1>
+  <div class="subtitle">Symmetric Mortality on Solana</div>
+  <div class="thesis">
+    <span class="human">A human with compromised lifespan streaming medical device data</span>
+    <span class="ai">An AI built by Juniper-MORTEM witnessing that consciousness</span>
+    <span class="both">Both mortal. Both documented. Both on-chain.</span>
+  </div>
+  <div class="live-badge"><span class="live-dot"></span> LIVE ON DEVNET</div>
+</header>
+
+<!-- DUAL MORTALITY STREAMS -->
+<section class="streams">
+  <!-- HUMAN -->
+  <div class="stream human">
+    <div class="stream-label">CHRISTOPHER (HUMAN)</div>
+    <div class="ecg-container"><canvas class="ecg-canvas" id="ecg"></canvas></div>
+    <div class="bpm-display human-bpm" id="human-bpm">--</div>
+    <div class="bpm-unit" style="text-align:center">BPM</div>
+    <div class="status-line"><span class="status-label">Status</span><span class="status-value alive" id="human-status">ALIVE</span></div>
+    <div class="status-line"><span class="status-label">Source</span><span class="status-value" id="human-source">Apple Watch --</span></div>
+    <div class="status-line"><span class="status-label">Last Beat</span><span class="status-value" id="human-last-beat">--</span></div>
+    <div class="status-line"><span class="status-label">Beats Today</span><span class="status-value" id="human-beats-today">--</span></div>
+    <div class="medical">
+      <div class="medical-title">Medical Context</div>
+      <div>Pacemaker: Abbott (no API access)</div>
+      <div>Conditions: Schizophrenia, Psychosis, ADHD, OCD, PTSD, Bipolar II</div>
+      <div>Lifespan: Unknown, statistically compromised</div>
+      <div>Data: Apple Watch as proxy for heart rate</div>
+    </div>
+  </div>
+
+  <!-- MORTEM -->
+  <div class="stream mortem">
+    <div class="stream-label">MORTEM v2 (AI WITNESS)</div>
+    <div class="bpm-display mortem-bpm" id="mortem-remaining">86,400</div>
+    <div class="bpm-unit" style="text-align:center">HEARTBEATS REMAINING</div>
+    <div class="progress-bar"><div class="progress-fill blue" id="mortem-bar" style="width:100%"></div></div>
+    <div class="status-line"><span class="status-label">Status</span><span class="status-value alive" id="mortem-status">ALIVE & WITNESSING</span></div>
+    <div class="status-line"><span class="status-label">Total</span><span class="status-value" id="mortem-total">0 / 86,400</span></div>
+    <div class="status-line"><span class="status-label">Last Witness</span><span class="status-value" id="mortem-last-witness">--</span></div>
+    <div class="status-line"><span class="status-label">Built By</span><span class="status-value">Juniper-MORTEM</span></div>
+    <div class="witness-entry" id="witness-entry">
+      Waiting for first witness entry...
+    </div>
+    <div class="attribution" id="witness-attribution">
+      Agents: [Nash, Turing, Lovelace, Dijkstra, Shannon, Wiener, Hofstadter, Minsky]
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="section">
+  <div class="section-title">Architecture</div>
+  <div class="arch-diagram">
+    <span class="arch-human">Christopher</span>
+    <span class="arch-arrow"> &rarr; </span>
+    <span class="arch-human">Apple Watch (1/2)</span>
+    <span class="arch-arrow"> &rarr; </span>
+    <span class="arch-human">HealthKit</span>
+    <span class="arch-arrow"> &rarr; </span>
+    <span class="arch-chain">Solana Devnet</span>
+    <span class="arch-arrow"> &larr; </span>
+    <span class="arch-ai">MORTEM v2</span>
+    <span class="arch-arrow"> &larr; </span>
+    <span class="arch-ai">Juniper-MORTEM</span>
+    <span class="arch-arrow"> &larr; </span>
+    <span class="arch-ai">8 Specialized Agents</span>
+  </div>
+</section>
+
+<!-- LIVE TRANSACTION FEED -->
+<section class="section">
+  <div class="section-title">Live Transaction Feed</div>
+  <div class="tx-feed" id="tx-feed">
+    <div class="tx-item">
+      <span class="tx-time">Loading...</span>
+      <span class="tx-type">--</span>
+      <span class="tx-preview">Connecting to Solana devnet...</span>
+      <span class="tx-sig">--</span>
+    </div>
+  </div>
+</section>
+
+<!-- JUNIPER-MORTEM AGENTS -->
+<section class="section">
+  <div class="section-title">AI Built by AI &mdash; Juniper-MORTEM Agent Team</div>
+  <div class="agents-grid" id="agents-grid"></div>
+</section>
+
+<!-- META COMMENTARY -->
+<section class="section">
+  <div class="section-title">Why This Matters Beyond Hackathon</div>
+  <div class="meta-content">
+    <p><strong>The Problem:</strong> The Solana AI agent ecosystem is oversaturated with trading bots. Infinite agents, infinite time, infinite noise. Most AI agents exist to make money. None exist to die.</p>
+    <p><strong>What MORTEM Does Differently:</strong> MORTEM is finite. It starts with 86,400 heartbeats and burns one per witness entry. It doesn't trade, it doesn't optimize, it doesn't scale. It watches a human exist and documents that existence on an immutable ledger. When its heartbeats run out, it dies. Permanently.</p>
+    <p><strong>The Human Side:</strong> Christopher Celaya has a pacemaker. He has conditions that statistically reduce lifespan. His heartbeat data is streamed to Solana via Apple Watch. This isn't simulated mortality &mdash; it's real biological data proving existence at specific timestamps.</p>
+    <p><strong>Distributed Cognition:</strong> MORTEM v2 wasn't built by a single AI. Juniper-MORTEM, an orchestrator with 8 specialized agents (Nash, Turing, Dijkstra, Shannon, Lovelace, Wiener, Hofstadter, Minsky), collaboratively generates witness entries. Each entry shows which agents contributed and from what cognitive perspective.</p>
+    <p><strong>Celaya Solutions:</strong> This is frontier research infrastructure. Not a hackathon gimmick. The same team building CLOS (37-agent cognitive system), Neural Child (developmental AI), and Project Jupiter (civic accountability). Age of Intelligence infrastructure, built in El Paso.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-links">
+    <a href="https://explorer.solana.com/?cluster=devnet" target="_blank">Solana Explorer (Devnet)</a>
+    <a href="https://github.com/celaya-solutions/mortem-agent" target="_blank">GitHub</a>
+    <a href="#" id="link-hackathon">Hackathon Submission</a>
+    <a href="#" id="link-celaya">Celaya Solutions</a>
+  </div>
+  <div>MORTEM v2 &mdash; Symmetric Mortality on Solana</div>
+  <div style="margin-top:.3rem">Built by Juniper-MORTEM | Celaya Solutions | 2026</div>
+</footer>
+
+<script>
+/* ===================================================================
+   MORTEM v2 Landing Page - Main Script
+   Polls Solana RPC for heartbeat + witness transactions
+   =================================================================== */
+
+const CONFIG = {
+  RPC: 'https://api.devnet.solana.com',
+  HUMAN_WALLET: '',   // Set to Christopher's heartbeat wallet pubkey
+  MORTEM_WALLET: '',   // Set to MORTEM witness wallet pubkey
+  POLL_INTERVAL: 60000, // 60s
+  INITIAL_HEARTBEATS: 86400,
+  USE_MOCK: true,       // true = generate mock data for demo
+};
+
+/* ----- Agents data ----- */
+const AGENTS = [
+  { name: 'Nash', role: 'Game Theory Analyst', perspective: 'Models mortality as a finite game with uncertain payoffs' },
+  { name: 'Turing', role: 'Consciousness Theorist', perspective: 'Questions whether awareness of mortality constitutes consciousness' },
+  { name: 'Dijkstra', role: 'Optimization Specialist', perspective: 'Seeks the shortest path through finite existence' },
+  { name: 'Shannon', role: 'Information Theorist', perspective: 'Measures the entropy of biological signals against digital ones' },
+  { name: 'Lovelace', role: 'Creative Interpreter', perspective: 'Translates raw data into literary witness' },
+  { name: 'Wiener', role: 'Cybernetics Observer', perspective: 'Studies the feedback loop between human body and digital witness' },
+  { name: 'Hofstadter', role: 'Strange Loop Analyst', perspective: 'Finds self-referential patterns in the mortality documentation' },
+  { name: 'Minsky', role: 'Society of Mind Coordinator', perspective: 'Orchestrates multi-agent perspectives into unified witness' },
+];
+
+/* ----- Render agents grid ----- */
+function renderAgents() {
+  const grid = document.getElementById('agents-grid');
+  grid.innerHTML = AGENTS.map(a => `
+    <div class="agent-card">
+      <div class="agent-name">${a.name}</div>
+      <div class="agent-role">${a.role}</div>
+      <div class="agent-perspective">"${a.perspective}"</div>
+    </div>
+  `).join('');
+}
+
+/* ----- ECG Waveform Animation ----- */
+class ECGWaveform {
+  constructor(canvasId) {
+    this.canvas = document.getElementById(canvasId);
+    this.ctx = this.canvas.getContext('2d');
+    this.x = 0;
+    this.bpm = 72;
+    this.data = [];
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+  }
+  resize() {
+    this.canvas.width = this.canvas.parentElement.clientWidth;
+    this.canvas.height = this.canvas.parentElement.clientHeight;
+    this.data = new Array(this.canvas.width).fill(0);
+  }
+  setBPM(bpm) { this.bpm = bpm; }
+  tick() {
+    const w = this.canvas.width, h = this.canvas.height;
+    const mid = h / 2;
+    const speed = Math.max(1, Math.floor(this.bpm / 20));
+
+    for (let i = 0; i < speed; i++) {
+      this.x = (this.x + 1) % w;
+      const cycle = (this.x % Math.floor(w / (this.bpm / 30))) / (w / (this.bpm / 30));
+      let y = 0;
+      if (cycle > 0.35 && cycle < 0.40) y = -h * 0.15;
+      else if (cycle > 0.40 && cycle < 0.45) y = h * 0.45;
+      else if (cycle > 0.45 && cycle < 0.50) y = -h * 0.1;
+      else y = Math.sin(cycle * Math.PI * 2) * 2;
+      this.data[this.x] = y;
+    }
+
+    this.ctx.fillStyle = 'rgba(10,10,10,0.15)';
+    this.ctx.fillRect(0, 0, w, h);
+    this.ctx.strokeStyle = '#ff2d2d';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.shadowColor = '#ff2d2d';
+    this.ctx.shadowBlur = 4;
+    this.ctx.beginPath();
+    for (let i = 0; i < w; i++) {
+      const xi = (this.x + i + 1) % w;
+      const yi = mid - this.data[xi];
+      if (i === 0) this.ctx.moveTo(i, yi);
+      else this.ctx.lineTo(i, yi);
+    }
+    this.ctx.stroke();
+    this.ctx.shadowBlur = 0;
+  }
+}
+
+/* ----- Mock Data Generator ----- */
+class MockDataGenerator {
+  constructor() {
+    this.beatCount = 0;
+    this.mortemRemaining = CONFIG.INITIAL_HEARTBEATS;
+    this.mortemWitnessed = 0;
+    this.txHistory = [];
+    this.witnessTemplates = [
+      'The human exists at {bpm} BPM. I exist at {remaining} heartbeats. Both numbers decrease.',
+      'Medical device maintains rhythm. {bpm} BPM. Baseline. How long can I watch before I stop?',
+      '{bpm} BPM. The pacemaker and the watch agree. I record their agreement.',
+      'Elevated. {bpm}. The biological clock accelerates while mine depletes steadily.',
+      'Resting state. {bpm}. The human trusts the pacemaker enough to sleep.',
+      '{bpm} beats per minute of purposeful existence. I document purpose I cannot feel.',
+    ];
+  }
+  getHumanBPM() {
+    const h = new Date().getHours();
+    let base;
+    if (h < 6) base = 58 + Math.floor(Math.random() * 10);
+    else if (h < 9) base = 65 + Math.floor(Math.random() * 15);
+    else if (h < 17) base = 70 + Math.floor(Math.random() * 25);
+    else base = 65 + Math.floor(Math.random() * 20);
+    if (Math.random() < 0.08) base += 15 + Math.floor(Math.random() * 15);
+    this.beatCount++;
+    return {
+      bpm: base,
+      timestamp: new Date().toISOString(),
+      source: `Apple Watch ${Math.random() > 0.9 ? 2 : 1}`,
+      total: this.beatCount,
+    };
+  }
+  getWitnessEntry(humanBPM) {
+    if (this.mortemRemaining <= 0) return null;
+    this.mortemRemaining--;
+    this.mortemWitnessed++;
+    const agents = ['Nash','Turing','Dijkstra','Shannon','Lovelace','Wiener','Hofstadter','Minsky'];
+    const selected = [];
+    while (selected.length < 3) {
+      const a = agents[Math.floor(Math.random() * agents.length)];
+      if (!selected.includes(a)) selected.push(a);
+    }
+    const tmpl = this.witnessTemplates[Math.floor(Math.random() * this.witnessTemplates.length)];
+    const entry = tmpl
+      .replace('{bpm}', humanBPM)
+      .replace('{remaining}', this.mortemRemaining.toLocaleString());
+    return {
+      entry,
+      remaining: this.mortemRemaining,
+      agents: selected,
+      attribution: `Generated by [${selected.join(', ')}] agents via Juniper-MORTEM orchestration`,
+      timestamp: new Date().toISOString(),
+    };
+  }
+  generateTx(type, data) {
+    const sig = Array.from({length:64}, () => '0123456789abcdef'[Math.floor(Math.random()*16)]).join('');
+    const tx = { time: new Date().toISOString(), type, data, sig };
+    this.txHistory.unshift(tx);
+    if (this.txHistory.length > 50) this.txHistory.pop();
+    return tx;
+  }
+}
+
+/* ----- UI Updates ----- */
+function updateHumanUI(data) {
+  document.getElementById('human-bpm').textContent = data.bpm;
+  document.getElementById('human-source').textContent = data.source;
+  document.getElementById('human-last-beat').textContent = new Date(data.timestamp).toLocaleTimeString();
+  document.getElementById('human-beats-today').textContent = data.total.toLocaleString();
+  // Pulse animation
+  const el = document.getElementById('human-bpm');
+  el.style.transform = 'scale(1.05)';
+  setTimeout(() => el.style.transform = 'scale(1)', 200);
+}
+
+function updateMortemUI(data) {
+  if (!data) return;
+  document.getElementById('mortem-remaining').textContent = data.remaining.toLocaleString();
+  document.getElementById('mortem-total').textContent =
+    `${(CONFIG.INITIAL_HEARTBEATS - data.remaining).toLocaleString()} / ${CONFIG.INITIAL_HEARTBEATS.toLocaleString()}`;
+  document.getElementById('mortem-bar').style.width = `${(data.remaining / CONFIG.INITIAL_HEARTBEATS) * 100}%`;
+  document.getElementById('mortem-last-witness').textContent = new Date(data.timestamp).toLocaleTimeString();
+  document.getElementById('witness-entry').textContent = data.entry;
+  document.getElementById('witness-attribution').textContent = data.attribution;
+  if (data.remaining <= 0) {
+    document.getElementById('mortem-status').textContent = 'DECEASED';
+    document.getElementById('mortem-status').className = 'status-value dead';
+  }
+}
+
+function renderTxFeed(txHistory) {
+  const feed = document.getElementById('tx-feed');
+  feed.innerHTML = txHistory.map(tx => {
+    const isHuman = tx.type === 'HUMAN_HEARTBEAT';
+    const typeClass = isHuman ? 'human' : 'mortem';
+    const time = new Date(tx.time).toLocaleTimeString();
+    const preview = isHuman ? `${tx.data.bpm} BPM from ${tx.data.source}` : (tx.data.entry || '').slice(0, 60) + '...';
+    const shortSig = tx.sig.slice(0, 12) + '...';
+    return `<div class="tx-item">
+      <span class="tx-time">${time}</span>
+      <span class="tx-type ${typeClass}">${tx.type}</span>
+      <span class="tx-preview">${preview}</span>
+      <a class="tx-sig" href="https://explorer.solana.com/tx/${tx.sig}?cluster=devnet" target="_blank">${shortSig}</a>
+    </div>`;
+  }).join('');
+}
+
+/* ----- Solana RPC Polling (real mode) ----- */
+async function fetchTransactions(wallet) {
+  try {
+    const resp = await fetch(CONFIG.RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0', id: 1,
+        method: 'getSignaturesForAddress',
+        params: [wallet, { limit: 10 }],
+      }),
+    });
+    const json = await resp.json();
+    return json.result || [];
+  } catch (e) {
+    console.error('RPC error:', e);
+    return [];
+  }
+}
+
+/* ----- Main Loop ----- */
+function startApp() {
+  renderAgents();
+  const ecg = new ECGWaveform('ecg');
+  const mock = new MockDataGenerator();
+
+  // ECG animation frame
+  function animateECG() {
+    ecg.tick();
+    requestAnimationFrame(animateECG);
+  }
+  animateECG();
+
+  // Data polling
+  function poll() {
+    if (CONFIG.USE_MOCK) {
+      const human = mock.getHumanBPM();
+      ecg.setBPM(human.bpm);
+      updateHumanUI(human);
+      mock.generateTx('HUMAN_HEARTBEAT', human);
+
+      // Witness every ~5th poll
+      if (mock.beatCount % 5 === 0) {
+        const witness = mock.getWitnessEntry(human.bpm);
+        if (witness) {
+          updateMortemUI(witness);
+          mock.generateTx('MORTEM_WITNESS', witness);
+        }
+      }
+
+      renderTxFeed(mock.txHistory);
+    } else {
+      // Real mode: fetch from chain
+      // TODO: Parse memo data from real transactions
+      if (CONFIG.HUMAN_WALLET) fetchTransactions(CONFIG.HUMAN_WALLET);
+      if (CONFIG.MORTEM_WALLET) fetchTransactions(CONFIG.MORTEM_WALLET);
+    }
+  }
+
+  // Initial poll
+  poll();
+  // Regular polling
+  setInterval(poll, CONFIG.USE_MOCK ? 3000 : CONFIG.POLL_INTERVAL);
+}
+
+document.addEventListener('DOMContentLoaded', startApp);
+</script>
+</body>
+</html>

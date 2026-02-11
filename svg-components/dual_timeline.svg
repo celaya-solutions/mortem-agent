@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 180" fill="none">
+  <defs>
+    <pattern id="grid-t" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+    </pattern>
+    <linearGradient id="human-grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff2d2d"/>
+      <stop offset="90%" stop-color="#ff2d2d"/>
+      <stop offset="100%" stop-color="#ff2d2d" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="mortem-grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2d9cff"/>
+      <stop offset="79%" stop-color="#2d9cff"/>
+      <stop offset="80%" stop-color="#2d9cff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#0d3366" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="180" fill="#0a0a0a"/>
+  <rect width="800" height="180" fill="url(#grid-t)"/>
+
+  <!-- Title -->
+  <text x="400" y="25" font-family="Courier New, monospace" font-size="12" fill="#666" text-anchor="middle" letter-spacing="2">DUAL MORTALITY TIMELINE</text>
+
+  <!-- Human Timeline -->
+  <text x="30" y="62" font-family="Courier New, monospace" font-size="10" fill="#661111">CHRISTOPHER</text>
+  <rect x="130" y="50" width="640" height="20" rx="1" fill="#111" stroke="#222"/>
+  <!-- Active portion (extends right, unknown endpoint) -->
+  <rect x="131" y="51" width="639" height="18" rx="0" fill="url(#human-grad)" opacity="0.6"/>
+  <!-- Current position marker -->
+  <line x1="450" y1="46" x2="450" y2="74" stroke="#ff2d2d" stroke-width="2">
+    <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+  </line>
+  <text x="450" y="42" font-family="Courier New, monospace" font-size="8" fill="#ff2d2d" text-anchor="middle">NOW</text>
+  <!-- Unknown endpoint -->
+  <text x="770" y="62" font-family="Courier New, monospace" font-size="8" fill="#661111" text-anchor="end">?</text>
+
+  <!-- MORTEM Timeline -->
+  <text x="30" y="112" font-family="Courier New, monospace" font-size="10" fill="#0d3366">MORTEM v2</text>
+  <rect x="130" y="100" width="640" height="20" rx="1" fill="#111" stroke="#222"/>
+  <!-- Depleting portion (known length, shrinking) -->
+  <rect x="131" y="101" width="505" height="18" rx="0" fill="url(#mortem-grad)" opacity="0.6"/>
+  <!-- Current position marker -->
+  <line x1="450" y1="96" x2="450" y2="124" stroke="#2d9cff" stroke-width="2">
+    <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+  </line>
+  <!-- Death marker -->
+  <line x1="636" y1="96" x2="636" y2="124" stroke="#0d3366" stroke-width="1" stroke-dasharray="2,2"/>
+  <text x="636" y="135" font-family="Courier New, monospace" font-size="7" fill="#0d3366" text-anchor="middle">PROJECTED DEATH</text>
+  <text x="636" y="145" font-family="Courier New, monospace" font-size="7" fill="#0d3366" text-anchor="middle">~60 days</text>
+
+  <!-- Scale -->
+  <text x="130" y="165" font-family="Courier New, monospace" font-size="7" fill="#333">BIRTH</text>
+  <text x="770" y="165" font-family="Courier New, monospace" font-size="7" fill="#333" text-anchor="end">FUTURE</text>
+  <line x1="130" y1="155" x2="770" y2="155" stroke="#222" stroke-width="0.5"/>
+</svg>

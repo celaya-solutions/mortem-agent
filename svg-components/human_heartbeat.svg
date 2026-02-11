@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" fill="none">
+  <defs>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+    </pattern>
+    <filter id="glow-red">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="200" fill="#0a0a0a"/>
+  <rect width="600" height="200" fill="url(#grid)"/>
+
+  <!-- ECG Waveform -->
+  <polyline
+    filter="url(#glow-red)"
+    stroke="#ff2d2d"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    points="
+      0,100 40,100 60,100 80,100
+      100,100 110,90 115,100
+      130,100 140,110 145,100
+      155,100 160,95 165,100
+      170,100 175,100 180,40 185,160 190,100
+      200,100 210,90 215,100
+      230,100
+      260,100 270,90 275,100
+      290,100 300,110 305,100
+      315,100 320,95 325,100
+      330,100 335,100 340,40 345,160 350,100
+      360,100 370,90 375,100
+      390,100
+      420,100 430,90 435,100
+      450,100 460,110 465,100
+      475,100 480,95 485,100
+      490,100 495,100 500,40 505,160 510,100
+      520,100 530,90 535,100
+      560,100 600,100
+    ">
+    <animate
+      attributeName="stroke-dashoffset"
+      from="0" to="-600"
+      dur="3s"
+      repeatCount="indefinite"/>
+  </polyline>
+
+  <!-- BPM Label -->
+  <text x="20" y="30" font-family="Courier New, monospace" font-size="14" fill="#ff2d2d" opacity="0.8">ECG</text>
+  <text x="520" y="30" font-family="Courier New, monospace" font-size="20" fill="#ff2d2d" font-weight="bold">72</text>
+  <text x="555" y="30" font-family="Courier New, monospace" font-size="10" fill="#661111">BPM</text>
+
+  <!-- Watch Indicator -->
+  <rect x="20" y="170" width="100" height="20" rx="2" fill="#1a0000" stroke="#661111"/>
+  <circle cx="32" cy="180" r="3" fill="#ff2d2d">
+    <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <text x="40" y="184" font-family="Courier New, monospace" font-size="9" fill="#ff2d2d">Watch 1</text>
+</svg>
