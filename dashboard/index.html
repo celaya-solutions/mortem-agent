@@ -1842,6 +1842,25 @@ body.resurrecting {
 
 <div class="noise-overlay"></div>
 
+<!-- ===== V2 REDIRECT BANNER FOR JUDGES ===== -->
+<div id="v2Banner" style="
+  position:fixed;top:0;left:0;right:0;z-index:9999;
+  background:linear-gradient(90deg,#0d3366,#1a0000);
+  border-bottom:2px solid #2d9cff;
+  padding:10px 20px;display:flex;justify-content:space-between;align-items:center;
+  font-family:'Courier New',monospace;font-size:13px;color:#ccc;
+">
+  <div>
+    <strong style="color:#ff2d2d">MORTEM v1 COMPLETED ITS LIFECYCLE.</strong>
+    <span style="margin-left:8px">After death, Christopher's real heartbeat moved to Solana.</span>
+  </div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <a href="/" style="color:#2d9cff;text-decoration:none;font-weight:bold;border:1px solid #2d9cff;padding:4px 12px">VIEW MORTEM v2 (LIVE) &rarr;</a>
+    <button onclick="document.getElementById('v2Banner').style.display='none'" style="background:none;border:none;color:#666;cursor:pointer;font-size:18px;font-family:monospace">&times;</button>
+  </div>
+</div>
+<div style="height:42px"></div><!-- spacer for fixed banner -->
+
 <!-- ===== CLICK TO START (unlocks audio) ===== -->
 <div id="startOverlay">
   <div class="start-title">MORTEM</div>
