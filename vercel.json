@@ -3,6 +3,7 @@
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
+    { "source": "/forum-api/:path*", "destination": "https://agents.colosseum.com/api/forum/:path*" },
     { "source": "/", "destination": "/landing/index.html" },
     { "source": "/v1", "destination": "/dashboard/index.html" },
     { "source": "/monitor", "destination": "/monitor/index.html" },
