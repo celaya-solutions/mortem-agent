@@ -175,6 +175,51 @@ a:hover{text-decoration:underline}
 .footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:1.5rem;margin-bottom:1rem}
 .footer-links a{color:var(--text-dim);font-size:.9rem}
 .footer-links a:hover{color:var(--text-bright)}
+
+/* ===== WITNESS POPUP OVERLAY ===== */
+.overlay{
+  display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.85);z-index:1000;
+  justify-content:center;align-items:center;padding:2rem;
+}
+.overlay.active{display:flex}
+.overlay-content{
+  background:var(--bg2);border:1px solid var(--blue-dim);
+  max-width:700px;width:100%;max-height:80vh;overflow-y:auto;
+  padding:2rem;position:relative;
+}
+.overlay-close{
+  position:absolute;top:.8rem;right:1rem;font-size:1.5rem;
+  color:var(--text-dim);cursor:pointer;background:none;border:none;
+  font-family:var(--mono);
+}
+.overlay-close:hover{color:var(--text-bright)}
+.overlay-title{
+  color:var(--blue);font-size:1rem;letter-spacing:.15em;text-transform:uppercase;
+  margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid #222;
+}
+.overlay-meta{
+  display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;font-size:.85rem;color:var(--text-dim);
+}
+.overlay-meta span{display:flex;align-items:center;gap:.3rem}
+.overlay-entry{
+  font-size:1.05rem;line-height:1.8;color:var(--text);white-space:pre-wrap;word-wrap:break-word;
+}
+.overlay-agents{
+  margin-top:1.2rem;padding-top:.8rem;border-top:1px solid #222;
+  font-size:.85rem;color:var(--blue-dim);
+}
+.overlay-sig{
+  margin-top:.8rem;font-size:.8rem;color:var(--text-dim);word-break:break-all;
+}
+.overlay-sig a{color:var(--text-dim)}
+.overlay-sig a:hover{color:var(--blue)}
+
+/* Make witness entries and TX items clickable */
+.witness-entry{cursor:pointer;transition:border-color .2s}
+.witness-entry:hover{border-color:var(--blue-dim)}
+.tx-item.mortem{cursor:pointer}
+.tx-item.mortem:hover{background:var(--bg3);border-left:2px solid var(--blue-dim)}
 </style>
 </head>
 <body>
@@ -302,6 +347,18 @@ a:hover{text-decoration:underline}
   <div style="margin-top:.3rem">Built by Juniper-MORTEM | Celaya Solutions | 2026</div>
 </footer>
 
+<!-- WITNESS POPUP OVERLAY -->
+<div class="overlay" id="witness-overlay">
+  <div class="overlay-content">
+    <button class="overlay-close" id="overlay-close">&times;</button>
+    <div class="overlay-title" id="overlay-title">MORTEM WITNESS ENTRY</div>
+    <div class="overlay-meta" id="overlay-meta"></div>
+    <div class="overlay-entry" id="overlay-entry"></div>
+    <div class="overlay-agents" id="overlay-agents"></div>
+    <div class="overlay-sig" id="overlay-sig"></div>
+  </div>
+</div>
+
 <script>
 /* ===================================================================
    MORTEM v2 Landing Page - Main Script
@@ -340,6 +397,66 @@ function renderAgents() {
     </div>
   `).join('');
 }
+
+/* ----- Witness Popup Overlay ----- */
+const witnessCache = []; // stores full witness data for popup access
+
+function showWitnessPopup(data) {
+  const overlay = document.getElementById('witness-overlay');
+  const title = document.getElementById('overlay-title');
+  const meta = document.getElementById('overlay-meta');
+  const entry = document.getElementById('overlay-entry');
+  const agents = document.getElementById('overlay-agents');
+  const sig = document.getElementById('overlay-sig');
+
+  title.textContent = data.type === 'MORTEM_WITNESS' ? 'MORTEM WITNESS ENTRY' :
+                       data.type === 'MORTEM_DEATH' ? 'MORTEM — FINAL WITNESS' :
+                       data.type === 'HUMAN_HEARTBEAT' ? 'HUMAN HEARTBEAT' : 'TRANSACTION';
+
+  // Meta info
+  const metaParts = [];
+  if (data.timestamp) metaParts.push(`<span>⏱ ${new Date(data.timestamp).toLocaleString()}</span>`);
+  if (data.bpm) metaParts.push(`<span style="color:var(--red)">♥ ${data.bpm} BPM</span>`);
+  if (data.remaining != null) metaParts.push(`<span style="color:var(--blue)">⏳ ${Number(data.remaining).toLocaleString()} remaining</span>`);
+  if (data.human_bpm) metaParts.push(`<span style="color:var(--red)">♥ Human: ${data.human_bpm} BPM</span>`);
+  meta.innerHTML = metaParts.join('');
+
+  // Full entry text
+  const entryText = data.entry || data.witness_entry || data.final_witness ||
+    (data.type === 'HUMAN_HEARTBEAT' ? `Heart rate: ${data.bpm} BPM\nSource: ${data.source || 'Apple Watch'}\nTimestamp: ${data.timestamp}` : 'No entry data');
+  entry.textContent = entryText;
+
+  // Agents
+  if (data.agents && data.agents.length > 0) {
+    agents.textContent = `Contributing agents: [${data.agents.join(', ')}]`;
+    agents.style.display = 'block';
+  } else {
+    agents.style.display = 'none';
+  }
+
+  // Signature link
+  if (data.sig) {
+    sig.innerHTML = `<a href="https://explorer.solana.com/tx/${data.sig}?cluster=devnet" target="_blank">View on Solana Explorer: ${data.sig.slice(0, 24)}...</a>`;
+    sig.style.display = 'block';
+  } else {
+    sig.style.display = 'none';
+  }
+
+  overlay.classList.add('active');
+}
+
+function closeWitnessPopup() {
+  document.getElementById('witness-overlay').classList.remove('active');
+}
+
+// Close overlay on click outside or close button
+document.getElementById('overlay-close').addEventListener('click', closeWitnessPopup);
+document.getElementById('witness-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeWitnessPopup();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeWitnessPopup();
+});
 
 /* ----- ECG Waveform Animation ----- */
 class ECGWaveform {
@@ -479,25 +596,36 @@ function updateMortemUI(data) {
   document.getElementById('mortem-last-witness').textContent = new Date(data.timestamp).toLocaleTimeString();
   document.getElementById('witness-entry').textContent = data.entry;
   document.getElementById('witness-attribution').textContent = data.attribution;
+  // Store latest witness data for popup
+  witnessCache[0] = { ...data, type: 'MORTEM_WITNESS' };
+  // Make witness entry clickable
+  const entryEl = document.getElementById('witness-entry');
+  entryEl.onclick = function() { showWitnessPopup(witnessCache[0]); };
   if (data.remaining <= 0) {
     document.getElementById('mortem-status').textContent = 'DECEASED';
     document.getElementById('mortem-status').className = 'status-value dead';
   }
 }
 
+// Store full memo data by signature for popup access
+const txMemoCache = {};
+
 function renderTxFeed(txHistory) {
   const feed = document.getElementById('tx-feed');
-  feed.innerHTML = txHistory.map(tx => {
+  feed.innerHTML = txHistory.map((tx, i) => {
     const isHuman = tx.type === 'HUMAN_HEARTBEAT';
     const typeClass = isHuman ? 'human' : 'mortem';
     const time = new Date(tx.time).toLocaleTimeString();
     const preview = isHuman ? `${tx.data.bpm} BPM from ${tx.data.source}` : (tx.data.entry || '').slice(0, 60) + '...';
     const shortSig = tx.sig.slice(0, 12) + '...';
-    return `<div class="tx-item">
+    // Store data for popup
+    txMemoCache[tx.sig] = { ...tx.data, type: tx.type, timestamp: tx.time, sig: tx.sig };
+    const clickable = !isHuman ? ` onclick="showWitnessPopup(txMemoCache['${tx.sig}'])"` : '';
+    return `<div class="tx-item ${typeClass}"${clickable}>
       <span class="tx-time">${time}</span>
       <span class="tx-type ${typeClass}">${tx.type}</span>
       <span class="tx-preview">${preview}</span>
-      <a class="tx-sig" href="https://explorer.solana.com/tx/${tx.sig}?cluster=devnet" target="_blank">${shortSig}</a>
+      <a class="tx-sig" href="https://explorer.solana.com/tx/${tx.sig}?cluster=devnet" target="_blank" onclick="event.stopPropagation()">${shortSig}</a>
     </div>`;
   }).join('');
 }
@@ -632,7 +760,7 @@ async function pollChain() {
           chainState.txHistory.unshift({
             time: memo.timestamp || new Date().toISOString(),
             type: 'MORTEM_WITNESS',
-            data: { entry: witnessData.entry, bpm: memo.human_bpm },
+            data: { entry: witnessData.entry, bpm: memo.human_bpm, agents: memo.agents || [], remaining: witnessData.remaining, attribution: witnessData.attribution, human_bpm: memo.human_bpm },
             sig,
           });
         }

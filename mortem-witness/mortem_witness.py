@@ -120,24 +120,55 @@ class HeartbeatReader:
                 if not tx_resp.value:
                     continue
 
-                # Parse memo from log messages
+                # Method 1: Parse from transaction instructions (most reliable)
+                # spl-memo program stores parsed JSON in instruction.parsed
+                # Structure: tx_resp.value.transaction.transaction.message.instructions
+                tx_data = tx_resp.value.transaction
+                msg = None
+                try:
+                    if hasattr(tx_data, 'transaction') and tx_data.transaction:
+                        msg = tx_data.transaction.message
+                    elif hasattr(tx_data, 'message'):
+                        msg = tx_data.message
+                except Exception:
+                    pass
+
+                if msg and hasattr(msg, 'instructions'):
+                    for ix in msg.instructions:
+                        prog = getattr(ix, 'program', None) or ''
+                        parsed = getattr(ix, 'parsed', None)
+                        if 'memo' in str(prog).lower() and parsed:
+                            try:
+                                data = json.loads(parsed) if isinstance(parsed, str) else parsed
+                                if isinstance(data, dict) and data.get("type") == "HUMAN_HEARTBEAT":
+                                    self.last_seen_sig = sig_str
+                                    return data
+                            except (json.JSONDecodeError, ValueError, TypeError):
+                                continue
+
+                # Method 2: Parse from log messages (fallback)
                 meta = tx_resp.value.transaction.meta
                 if meta and meta.log_messages:
                     for log_msg in meta.log_messages:
-                        if "Program log: Memo" in log_msg or log_msg.startswith("Program log: "):
-                            # Try to extract JSON from memo
-                            try:
-                                # Memo logs look like: Program log: Memo (len N): "..."
-                                # or the data might be in a different format
-                                json_start = log_msg.find("{")
-                                if json_start >= 0:
-                                    json_str = log_msg[json_start:]
-                                    data = json.loads(json_str)
-                                    if data.get("type") == "HUMAN_HEARTBEAT":
-                                        self.last_seen_sig = sig_str
-                                        return data
-                            except (json.JSONDecodeError, ValueError):
-                                continue
+                        try:
+                            # Memo logs: Program log: Memo (len N): "escaped_json"
+                            import re
+                            memo_match = re.search(r'Memo \(len \d+\): "(.*)"$', log_msg)
+                            if memo_match:
+                                unescaped = memo_match.group(1).replace('\\"', '"').replace('\\\\', '\\')
+                                data = json.loads(unescaped)
+                                if isinstance(data, dict) and data.get("type") == "HUMAN_HEARTBEAT":
+                                    self.last_seen_sig = sig_str
+                                    return data
+                            # Also try bare JSON in case format differs
+                            json_start = log_msg.find("{")
+                            if json_start >= 0:
+                                data = json.loads(log_msg[json_start:])
+                                if isinstance(data, dict) and data.get("type") == "HUMAN_HEARTBEAT":
+                                    self.last_seen_sig = sig_str
+                                    return data
+                        except (json.JSONDecodeError, ValueError):
+                            continue
 
             return None
 
