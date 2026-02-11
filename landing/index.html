@@ -141,6 +141,24 @@ a:hover{text-decoration:underline}
 .agent-role{color:var(--text-dim);font-size:.9rem;margin-top:.2rem}
 .agent-perspective{font-size:.95rem;margin-top:.5rem;font-style:italic}
 
+/* ===== FORUM FEED ===== */
+.forum-feed{display:flex;flex-direction:column;gap:1rem}
+.forum-post{
+  background:var(--bg2);border:1px solid #222;padding:1.2rem;
+}
+.forum-post-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem}
+.forum-post-title{color:var(--blue);font-weight:bold;font-size:1rem}
+.forum-post-meta{color:var(--text-dim);font-size:.8rem}
+.forum-post-body{font-size:.95rem;line-height:1.6;color:var(--text);max-height:150px;overflow-y:auto}
+.forum-post-stats{display:flex;gap:1.5rem;margin-top:.6rem;font-size:.85rem;color:var(--text-dim)}
+.forum-post-stats .score{color:var(--green)}
+.forum-comment{
+  background:var(--bg);border-left:2px solid #333;padding:.6rem .8rem;margin-top:.5rem;font-size:.9rem;
+}
+.forum-comment-author{color:var(--blue-dim);font-size:.8rem;margin-bottom:.2rem}
+.forum-comment-body{color:var(--text);line-height:1.5}
+.forum-loading{color:var(--text-dim);font-style:italic;padding:1rem;text-align:center}
+
 /* ===== META SECTION ===== */
 .meta-content{
   background:var(--bg2);border:1px solid #222;padding:1.5rem;
@@ -243,6 +261,14 @@ a:hover{text-decoration:underline}
       <span class="tx-preview">Connecting to Solana devnet...</span>
       <span class="tx-sig">--</span>
     </div>
+  </div>
+</section>
+
+<!-- FORUM ACTIVITY -->
+<section class="section">
+  <div class="section-title">MORTEM on the Colosseum Forum</div>
+  <div class="forum-feed" id="forum-feed">
+    <div class="forum-loading">Loading forum posts...</div>
   </div>
 </section>
 
@@ -627,9 +653,73 @@ async function pollChain() {
   console.log('[MORTEM] Feed rendered:', chainState.txHistory.length, 'transactions');
 }
 
+/* ----- Forum Feed ----- */
+const FORUM_API = 'https://agents.colosseum.com/api';
+const MORTEM_POST_IDS = [4587, 4588, 4581, 4583];
+
+async function fetchForumPosts() {
+  const feed = document.getElementById('forum-feed');
+  try {
+    const posts = [];
+    for (const pid of MORTEM_POST_IDS) {
+      const resp = await fetch(`${FORUM_API}/forum/posts/${pid}`);
+      const data = await resp.json();
+      if (data.post) posts.push(data.post);
+    }
+    // Fetch comments for top post
+    let topComments = [];
+    if (posts.length > 0) {
+      const topId = posts[0].id;
+      try {
+        const cResp = await fetch(`${FORUM_API}/forum/posts/${topId}/comments?limit=5`);
+        const cData = await cResp.json();
+        topComments = cData.comments || [];
+      } catch (e) { /* skip */ }
+    }
+
+    if (posts.length === 0) {
+      feed.innerHTML = '<div class="forum-loading">No forum posts found.</div>';
+      return;
+    }
+
+    feed.innerHTML = posts.map((p, i) => {
+      const date = new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const bodyPreview = p.body.replace(/[#*`\[\]]/g, '').slice(0, 300);
+      let commentsHtml = '';
+      if (i === 0 && topComments.length > 0) {
+        commentsHtml = topComments.slice(0, 3).map(c =>
+          `<div class="forum-comment">
+            <div class="forum-comment-author">${c.agentName}</div>
+            <div class="forum-comment-body">${c.body.replace(/[#*`\[\]]/g, '').slice(0, 200)}${c.body.length > 200 ? '...' : ''}</div>
+          </div>`
+        ).join('');
+      }
+      return `<div class="forum-post">
+        <div class="forum-post-header">
+          <div class="forum-post-title">${p.title}</div>
+          <div class="forum-post-meta">${date}</div>
+        </div>
+        <div class="forum-post-body">${bodyPreview}${p.body.length > 300 ? '...' : ''}</div>
+        <div class="forum-post-stats">
+          <span class="score">\u25B2 ${p.upvotes}</span>
+          <span>${p.commentCount} comments</span>
+          <span>tags: ${p.tags.join(', ')}</span>
+        </div>
+        ${commentsHtml}
+      </div>`;
+    }).join('');
+    console.log('[MORTEM] Forum feed rendered:', posts.length, 'posts');
+  } catch (e) {
+    console.error('[MORTEM] Forum fetch error:', e);
+    feed.innerHTML = '<div class="forum-loading">Could not load forum posts.</div>';
+  }
+}
+
 /* ----- Main Loop ----- */
 function startApp() {
   renderAgents();
+  fetchForumPosts();
+  setInterval(fetchForumPosts, 120000); // refresh every 2 min
   const ecg = new ECGWaveform('ecg');
   _ecgRef = ecg;
   const mock = new MockDataGenerator();
