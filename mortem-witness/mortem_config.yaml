@@ -1,7 +1,7 @@
 # MORTEM v2 Witness Agent Configuration
 
 # MORTEM's own Solana wallet (separate from human wallet)
-mortem_wallet_path: "~/.config/mortem/mortem-witness-wallet.json"
+mortem_wallet_path: "~/.config/solana/mortem.json"
 
 # Solana RPC
 rpc_endpoint: "https://api.devnet.solana.com"
@@ -11,12 +11,12 @@ lamports: 1000
 
 # Christopher's heartbeat wallet public key
 # Set this to the pubkey from heartbeat-stream when running for real
-human_wallet_pubkey: ""
+human_wallet_pubkey: "BdYodkkT2Qc6WWUSmpBNKu8nZkDPeyxMiEvDwDRQ3qXh"
 
 # Data source: "mock" or "chain"
 # "mock" generates simulated BPM data
 # "chain" reads real heartbeat transactions from Solana
-data_source: "mock"
+data_source: "chain"
 
 # MORTEM starts with 86,400 heartbeats
 initial_heartbeats: 86400

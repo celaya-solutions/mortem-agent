@@ -3,7 +3,7 @@
 
 # Solana wallet keypair path (JSON array of bytes)
 # Will auto-generate if file doesn't exist
-wallet_path: "~/.config/mortem/heartbeat-wallet.json"
+wallet_path: "~/.config/solana/id.json"
 
 # Solana RPC endpoint (devnet)
 rpc_endpoint: "https://api.devnet.solana.com"
@@ -18,9 +18,12 @@ heartbeat_interval_seconds: 60
 # 5 minutes = 300s, 10 minutes = 600s
 grace_period_seconds: 300
 
-# Data source: "mock" or "healthkit"
-# Use "mock" until Apple Watch MCP server is wired up
-data_source: "mock"
+# Data source: "mock", "file", or "healthkit"
+# "file" replays real Apple Watch data from heartrate_clean.json
+data_source: "file"
+
+# Path to heartrate JSON (when data_source is "file")
+data_file: "/Users/chriscelaya/Desktop/MORTEM/christophers-mortem-integration/heartrate_clean.json"
 
 # HealthKit MCP endpoint (when data_source is "healthkit")
 healthkit_endpoint: "http://localhost:8080"

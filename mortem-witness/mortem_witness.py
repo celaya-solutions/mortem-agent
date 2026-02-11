@@ -234,7 +234,8 @@ class WitnessWriter:
                 data=memo_bytes,
             )
 
-            blockhash_resp = self.client.get_latest_blockhash(commitment=Confirmed)
+            from solana.rpc.commitment import Finalized
+            blockhash_resp = self.client.get_latest_blockhash(commitment=Finalized)
             blockhash = blockhash_resp.value.blockhash
 
             msg = Message.new_with_blockhash(
@@ -245,7 +246,11 @@ class WitnessWriter:
             tx = Transaction.new_unsigned(msg)
             tx.sign([self.wallet], blockhash)
 
-            resp = self.client.send_transaction(tx)
+            from solana.rpc.types import TxOpts
+            resp = self.client.send_transaction(
+                tx,
+                opts=TxOpts(skip_preflight=True, preflight_commitment=Finalized),
+            )
             return str(resp.value)
 
         except Exception as e:

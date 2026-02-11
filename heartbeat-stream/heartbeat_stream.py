@@ -125,6 +125,39 @@ class MockHeartbeatSource:
         }
 
 
+class FileHeartbeatSource:
+    """Replays real heartbeat data from a JSON file (e.g. HealthKit export).
+
+    Reads the file once, reverses to chronological order, then yields entries
+    one at a time on each get_bpm() call. When all entries are exhausted, wraps
+    around to the beginning.
+    """
+
+    def __init__(self, file_path: str):
+        path = Path(file_path).expanduser()
+        if not path.exists():
+            raise FileNotFoundError(f"Heartbeat data file not found: {path}")
+        log.info(f"Loading heartbeat data from {path}...")
+        with open(path) as f:
+            raw = json.load(f)
+        # File is newest-first; reverse to chronological
+        self.entries = list(reversed(raw))
+        self.index = 0
+        log.info(f"Loaded {len(self.entries)} heartbeat records")
+
+    def get_bpm(self) -> dict:
+        entry = self.entries[self.index % len(self.entries)]
+        self.index += 1
+        return {
+            "bpm": entry["bpm"],
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": entry.get("source", "Christopher's Apple Watch"),
+            "watch_id": 1,
+            "data_type": "healthkit_replay",
+            "original_timestamp": entry["timestamp"],
+        }
+
+
 class HealthKitSource:
     """Placeholder for real HealthKit/MCP integration.
 
@@ -216,8 +249,9 @@ class SolanaHeartbeatWriter:
                 data=memo_bytes,
             )
 
-            # Get recent blockhash
-            blockhash_resp = self.client.get_latest_blockhash(commitment=Confirmed)
+            # Get recent blockhash (use Finalized for reliability on devnet)
+            from solana.rpc.commitment import Finalized
+            blockhash_resp = self.client.get_latest_blockhash(commitment=Finalized)
             blockhash = blockhash_resp.value.blockhash
 
             # Build and sign transaction
@@ -229,8 +263,12 @@ class SolanaHeartbeatWriter:
             tx = Transaction.new_unsigned(msg)
             tx.sign([self.wallet], blockhash)
 
-            # Send
-            resp = self.client.send_transaction(tx)
+            # Send with skip_preflight to avoid blockhash race
+            from solana.rpc.types import TxOpts
+            resp = self.client.send_transaction(
+                tx,
+                opts=TxOpts(skip_preflight=True, preflight_commitment=Finalized),
+            )
             sig = str(resp.value)
             self.tx_count += 1
             return sig
@@ -369,7 +407,14 @@ def main():
             log.error(f"Airdrop failed: {e}. Fund wallet manually.")
 
     # Init components
-    heartbeat_source = MockHeartbeatSource()
+    data_source = config.get("data_source", "mock")
+    if data_source == "file":
+        data_file = config.get("data_file", "")
+        heartbeat_source = FileHeartbeatSource(data_file)
+        log.info("Using FILE heartbeat source (real Apple Watch data)")
+    else:
+        heartbeat_source = MockHeartbeatSource()
+        log.info("Using MOCK heartbeat source")
     writer = SolanaHeartbeatWriter(
         client=client,
         wallet=wallet,

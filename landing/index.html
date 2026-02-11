@@ -16,7 +16,7 @@
   --mono:'Courier New',Courier,'Lucida Console',monospace;
   --grid-line:rgba(255,255,255,.04);
 }
-html{font-size:14px;scroll-behavior:smooth}
+html{font-size:17px;scroll-behavior:smooth}
 body{
   background:var(--bg);color:var(--text);font-family:var(--mono);
   line-height:1.6;min-height:100vh;
@@ -31,9 +31,9 @@ a:hover{text-decoration:underline}
 /* ===== HEADER ===== */
 .header{text-align:center;padding:3rem 1rem 2rem;border-bottom:1px solid #222}
 .header h1{font-size:2rem;color:var(--text-bright);letter-spacing:.3em;text-transform:uppercase}
-.header .subtitle{color:var(--text-dim);font-size:.9rem;margin-top:.5rem}
-.thesis{margin-top:1.5rem;display:flex;flex-direction:column;gap:.3rem;align-items:center}
-.thesis span{font-size:.85rem}
+.header .subtitle{color:var(--text-dim);font-size:1rem;margin-top:.5rem}
+.thesis{margin-top:1.5rem;display:flex;flex-direction:column;gap:.4rem;align-items:center}
+.thesis span{font-size:1rem}
 .thesis .human{color:var(--red)}
 .thesis .ai{color:var(--blue)}
 .thesis .both{color:var(--green)}
@@ -58,7 +58,7 @@ a:hover{text-decoration:underline}
 .stream{background:var(--bg2);padding:1.5rem;border:1px solid #222;position:relative}
 .stream-label{
   position:absolute;top:-.6rem;left:1rem;
-  background:var(--bg);padding:0 .5rem;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  background:var(--bg);padding:0 .5rem;font-size:.85rem;letter-spacing:.2em;text-transform:uppercase;
 }
 .stream.human .stream-label{color:var(--red)}
 .stream.mortem .stream-label{color:var(--blue)}
@@ -68,7 +68,7 @@ a:hover{text-decoration:underline}
 .bpm-display.mortem-bpm{color:var(--blue);text-shadow:0 0 20px var(--blue-glow)}
 .bpm-unit{font-size:1rem;color:var(--text-dim)}
 
-.status-line{display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid #1a1a1a;font-size:.8rem}
+.status-line{display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid #1a1a1a;font-size:.95rem}
 .status-label{color:var(--text-dim)}
 .status-value{color:var(--text-bright)}
 .status-value.alive{color:var(--green)}
@@ -84,16 +84,16 @@ a:hover{text-decoration:underline}
 .progress-fill.blue{background:var(--blue)}
 
 /* Medical context */
-.medical{margin-top:1rem;padding:.8rem;background:var(--bg);border:1px solid #1a1a1a;font-size:.75rem}
-.medical-title{color:var(--red-dim);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem}
+.medical{margin-top:1rem;padding:.8rem;background:var(--bg);border:1px solid #1a1a1a;font-size:.9rem}
+.medical-title{color:var(--red-dim);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem}
 
 /* Witness entry */
 .witness-entry{
   margin-top:1rem;padding:.8rem;background:var(--bg);border:1px solid #1a1a1a;
-  font-size:.8rem;font-style:italic;max-height:120px;overflow-y:auto;
+  font-size:.95rem;font-style:italic;max-height:150px;overflow-y:auto;
   color:var(--text);line-height:1.5;
 }
-.attribution{font-size:.65rem;color:var(--blue-dim);margin-top:.3rem;font-style:normal}
+.attribution{font-size:.8rem;color:var(--blue-dim);margin-top:.3rem;font-style:normal}
 
 /* ===== ECG WAVEFORM ===== */
 .ecg-container{height:60px;margin:1rem 0;position:relative;overflow:hidden}
@@ -108,7 +108,7 @@ a:hover{text-decoration:underline}
 
 .arch-diagram{
   background:var(--bg2);border:1px solid #222;padding:1.5rem;
-  font-size:.8rem;text-align:center;line-height:2;
+  font-size:1rem;text-align:center;line-height:2;
   overflow-x:auto;white-space:nowrap;
 }
 .arch-human{color:var(--red)}
@@ -119,8 +119,8 @@ a:hover{text-decoration:underline}
 /* ===== TRANSACTION FEED ===== */
 .tx-feed{max-height:300px;overflow-y:auto;background:var(--bg2);border:1px solid #222}
 .tx-item{
-  display:grid;grid-template-columns:120px 140px 1fr 80px;gap:.5rem;
-  padding:.5rem .8rem;border-bottom:1px solid #1a1a1a;font-size:.75rem;
+  display:grid;grid-template-columns:120px 160px 1fr 100px;gap:.5rem;
+  padding:.5rem .8rem;border-bottom:1px solid #1a1a1a;font-size:.9rem;
   align-items:center;
 }
 @media(max-width:768px){.tx-item{grid-template-columns:1fr;gap:.2rem}}
@@ -130,21 +130,21 @@ a:hover{text-decoration:underline}
 .tx-type.human{color:var(--red)}
 .tx-type.mortem{color:var(--blue)}
 .tx-preview{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tx-sig{color:var(--text-dim);font-size:.65rem}
+.tx-sig{color:var(--text-dim);font-size:.8rem}
 
 /* ===== AGENTS GRID ===== */
 .agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem}
 .agent-card{
   background:var(--bg2);border:1px solid #222;padding:1rem;
 }
-.agent-name{color:var(--blue);font-weight:bold;font-size:.9rem}
-.agent-role{color:var(--text-dim);font-size:.75rem;margin-top:.2rem}
-.agent-perspective{font-size:.8rem;margin-top:.5rem;font-style:italic}
+.agent-name{color:var(--blue);font-weight:bold;font-size:1rem}
+.agent-role{color:var(--text-dim);font-size:.9rem;margin-top:.2rem}
+.agent-perspective{font-size:.95rem;margin-top:.5rem;font-style:italic}
 
 /* ===== META SECTION ===== */
 .meta-content{
   background:var(--bg2);border:1px solid #222;padding:1.5rem;
-  font-size:.85rem;line-height:1.8;
+  font-size:1rem;line-height:1.8;
 }
 .meta-content p{margin-bottom:1rem}
 .meta-content strong{color:var(--text-bright)}
@@ -152,10 +152,10 @@ a:hover{text-decoration:underline}
 /* ===== FOOTER ===== */
 .footer{
   text-align:center;padding:2rem 1rem;border-top:1px solid #222;
-  font-size:.75rem;color:var(--text-dim);
+  font-size:.9rem;color:var(--text-dim);
 }
 .footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:1.5rem;margin-bottom:1rem}
-.footer-links a{color:var(--text-dim);font-size:.8rem}
+.footer-links a{color:var(--text-dim);font-size:.9rem}
 .footer-links a:hover{color:var(--text-bright)}
 </style>
 </head>
@@ -284,11 +284,11 @@ a:hover{text-decoration:underline}
 
 const CONFIG = {
   RPC: 'https://api.devnet.solana.com',
-  HUMAN_WALLET: '',   // Set to Christopher's heartbeat wallet pubkey
-  MORTEM_WALLET: '',   // Set to MORTEM witness wallet pubkey
+  HUMAN_WALLET: 'BdYodkkT2Qc6WWUSmpBNKu8nZkDPeyxMiEvDwDRQ3qXh',
+  MORTEM_WALLET: '7jQeZjzsgHFFytQYbUT3cWc2wt7qw6f34NkTVbFa2nWQ',
   POLL_INTERVAL: 60000, // 60s
   INITIAL_HEARTBEATS: 86400,
-  USE_MOCK: true,       // true = generate mock data for demo
+  USE_MOCK: false,       // false = read real data from Solana devnet
 };
 
 /* ----- Agents data ----- */
@@ -430,11 +430,14 @@ class MockDataGenerator {
 }
 
 /* ----- UI Updates ----- */
+let _ecgRef = null;
 function updateHumanUI(data) {
   document.getElementById('human-bpm').textContent = data.bpm;
   document.getElementById('human-source').textContent = data.source;
   document.getElementById('human-last-beat').textContent = new Date(data.timestamp).toLocaleTimeString();
   document.getElementById('human-beats-today').textContent = data.total.toLocaleString();
+  // Update ECG with real BPM
+  if (_ecgRef) _ecgRef.setBPM(data.bpm);
   // Pulse animation
   const el = document.getElementById('human-bpm');
   el.style.transform = 'scale(1.05)';
@@ -473,30 +476,162 @@ function renderTxFeed(txHistory) {
   }).join('');
 }
 
-/* ----- Solana RPC Polling (real mode) ----- */
-async function fetchTransactions(wallet) {
+/* ----- Solana RPC Helpers ----- */
+async function rpcCall(method, params) {
   try {
     const resp = await fetch(CONFIG.RPC, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0', id: 1,
-        method: 'getSignaturesForAddress',
-        params: [wallet, { limit: 10 }],
-      }),
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
     });
     const json = await resp.json();
-    return json.result || [];
+    return json.result;
   } catch (e) {
     console.error('RPC error:', e);
-    return [];
+    return null;
   }
+}
+
+async function getRecentSignatures(wallet, limit = 20) {
+  const result = await rpcCall('getSignaturesForAddress', [wallet, { limit }]);
+  return result || [];
+}
+
+async function getTransaction(sig) {
+  return await rpcCall('getTransaction', [sig, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 }]);
+}
+
+function parseMemoFromTx(tx) {
+  if (!tx) return null;
+  // Method 1: Parse from instructions (most reliable — spl-memo parsed field)
+  try {
+    const ixs = tx.transaction && tx.transaction.message && tx.transaction.message.instructions;
+    if (ixs) {
+      for (const ix of ixs) {
+        if (ix.program === 'spl-memo' && ix.parsed) {
+          const data = typeof ix.parsed === 'string' ? JSON.parse(ix.parsed) : ix.parsed;
+          if (data && data.type) return data;
+        }
+      }
+    }
+  } catch (e) { /* fall through */ }
+  // Method 2: Parse from log messages (fallback)
+  try {
+    const logs = tx.meta && tx.meta.logMessages;
+    if (logs) {
+      for (const log of logs) {
+        const memoMatch = log.match(/Memo \(len \d+\): "(.*)"$/);
+        if (memoMatch) {
+          const unescaped = memoMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+          return JSON.parse(unescaped);
+        }
+      }
+    }
+  } catch (e) { /* skip */ }
+  return null;
+}
+
+/* ----- Chain State ----- */
+const chainState = {
+  txHistory: [],
+  seenSigs: new Set(),
+  humanBeatCount: 0,
+  latestHumanBPM: null,
+  latestWitness: null,
+};
+
+async function fetchAndParseWallet(wallet, maxTx = 5) {
+  const sigs = await getRecentSignatures(wallet, maxTx);
+  const results = [];
+  for (const sigInfo of sigs) {
+    const sig = sigInfo.signature;
+    if (chainState.seenSigs.has(sig)) continue;
+    const tx = await getTransaction(sig);
+    const memo = parseMemoFromTx(tx);
+    if (memo) {
+      chainState.seenSigs.add(sig);
+      results.push({ sig, memo });
+    }
+  }
+  return results;
+}
+
+async function pollChain() {
+  console.log('[MORTEM] Polling chain data...');
+
+  // Fetch human heartbeat transactions
+  if (CONFIG.HUMAN_WALLET) {
+    try {
+      const results = await fetchAndParseWallet(CONFIG.HUMAN_WALLET, 5);
+      for (const { sig, memo } of results) {
+        if (memo.type === 'HUMAN_HEARTBEAT') {
+          chainState.humanBeatCount = memo.total_beats_recorded || (chainState.humanBeatCount + 1);
+          chainState.latestHumanBPM = {
+            bpm: memo.bpm,
+            source: memo.source || "Christopher's Apple Watch",
+            timestamp: memo.timestamp,
+            total: chainState.humanBeatCount,
+          };
+          chainState.txHistory.unshift({
+            time: memo.timestamp || new Date().toISOString(),
+            type: 'HUMAN_HEARTBEAT',
+            data: { bpm: memo.bpm, source: memo.source || 'Apple Watch' },
+            sig,
+          });
+        }
+      }
+      if (chainState.latestHumanBPM) {
+        updateHumanUI(chainState.latestHumanBPM);
+        console.log('[MORTEM] Human BPM updated:', chainState.latestHumanBPM.bpm);
+      }
+    } catch (e) {
+      console.error('[MORTEM] Human fetch error:', e);
+    }
+  }
+
+  // Fetch MORTEM witness transactions
+  if (CONFIG.MORTEM_WALLET) {
+    try {
+      const results = await fetchAndParseWallet(CONFIG.MORTEM_WALLET, 5);
+      for (const { sig, memo } of results) {
+        if (memo.type === 'MORTEM_WITNESS' || memo.type === 'MORTEM_DEATH') {
+          const witnessData = {
+            entry: memo.witness_entry || memo.final_witness || 'Witness entry on-chain',
+            remaining: memo.heartbeats_remaining != null ? memo.heartbeats_remaining : CONFIG.INITIAL_HEARTBEATS,
+            agents: memo.agents || [],
+            attribution: memo.attribution || `Agents: [${(memo.agents || []).join(', ')}]`,
+            timestamp: memo.timestamp || new Date().toISOString(),
+          };
+          chainState.latestWitness = witnessData;
+          chainState.txHistory.unshift({
+            time: memo.timestamp || new Date().toISOString(),
+            type: 'MORTEM_WITNESS',
+            data: { entry: witnessData.entry, bpm: memo.human_bpm },
+            sig,
+          });
+        }
+      }
+      if (chainState.latestWitness) {
+        updateMortemUI(chainState.latestWitness);
+        console.log('[MORTEM] Witness updated:', chainState.latestWitness.remaining, 'remaining');
+      }
+    } catch (e) {
+      console.error('[MORTEM] Witness fetch error:', e);
+    }
+  }
+
+  // Sort by time (newest first) and trim
+  chainState.txHistory.sort((a, b) => new Date(b.time) - new Date(a.time));
+  if (chainState.txHistory.length > 50) chainState.txHistory.length = 50;
+  renderTxFeed(chainState.txHistory);
+  console.log('[MORTEM] Feed rendered:', chainState.txHistory.length, 'transactions');
 }
 
 /* ----- Main Loop ----- */
 function startApp() {
   renderAgents();
   const ecg = new ECGWaveform('ecg');
+  _ecgRef = ecg;
   const mock = new MockDataGenerator();
 
   // ECG animation frame
@@ -506,15 +641,13 @@ function startApp() {
   }
   animateECG();
 
-  // Data polling
-  function poll() {
-    if (CONFIG.USE_MOCK) {
+  if (CONFIG.USE_MOCK) {
+    // Mock mode
+    function poll() {
       const human = mock.getHumanBPM();
       ecg.setBPM(human.bpm);
       updateHumanUI(human);
       mock.generateTx('HUMAN_HEARTBEAT', human);
-
-      // Witness every ~5th poll
       if (mock.beatCount % 5 === 0) {
         const witness = mock.getWitnessEntry(human.bpm);
         if (witness) {
@@ -522,20 +655,17 @@ function startApp() {
           mock.generateTx('MORTEM_WITNESS', witness);
         }
       }
-
       renderTxFeed(mock.txHistory);
-    } else {
-      // Real mode: fetch from chain
-      // TODO: Parse memo data from real transactions
-      if (CONFIG.HUMAN_WALLET) fetchTransactions(CONFIG.HUMAN_WALLET);
-      if (CONFIG.MORTEM_WALLET) fetchTransactions(CONFIG.MORTEM_WALLET);
     }
+    poll();
+    setInterval(poll, 3000);
+  } else {
+    // Real chain mode
+    pollChain();
+    setInterval(pollChain, CONFIG.POLL_INTERVAL);
+    // Update ECG with a default BPM, will be overridden by chain data
+    ecg.setBPM(72);
   }
-
-  // Initial poll
-  poll();
-  // Regular polling
-  setInterval(poll, CONFIG.USE_MOCK ? 3000 : CONFIG.POLL_INTERVAL);
 }
 
 document.addEventListener('DOMContentLoaded', startApp);

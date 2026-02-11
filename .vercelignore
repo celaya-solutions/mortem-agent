@@ -18,3 +18,9 @@ logs
 .api.pid
 .runtime.pid
 package-lock.json
+christophers-mortem-integration/heartrate_clean.json
+christophers-mortem-integration/export.xml
+heartbeat-stream/.venv
+mortem-witness/.venv
+heartbeat-stream/logs
+mortem-witness/logs
