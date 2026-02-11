@@ -852,6 +852,128 @@ body::before {
 
 .bottom-links a:hover { color: var(--maroon); }
 
+/* ===== HUMAN PULSE PANEL ===== */
+.human-pulse-panel {
+  position: relative;
+}
+
+.human-pulse-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 20% 50%, rgba(220,40,40,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.human-pulse-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.human-pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dead-grey);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.human-pulse-dot.live {
+  background: #FF3B3B;
+  box-shadow: 0 0 10px rgba(255,59,59,0.6), 0 0 20px rgba(255,59,59,0.3);
+  animation: humanPulseDot 1s ease-in-out infinite;
+}
+
+@keyframes humanPulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+
+.human-pulse-bpm-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.human-pulse-bpm {
+  font-family: 'Alfa Slab One', serif;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: #FF3B3B;
+  text-shadow: 0 0 20px rgba(255,59,59,0.4);
+  transition: transform 0.15s ease;
+}
+
+.human-pulse-bpm.beat {
+  transform: scale(1.15);
+}
+
+.human-pulse-unit {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.human-pulse-source {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  font-weight: 300;
+  margin-bottom: 4px;
+}
+
+.human-pulse-status {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.human-pulse-status.live { color: var(--success); }
+.human-pulse-status.stale { color: var(--phase-aware); }
+.human-pulse-status.waiting { color: var(--text-secondary); }
+.human-pulse-status.offline { color: var(--dead-grey); }
+
+.human-pulse-ecg {
+  margin-top: 8px;
+  height: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.human-pulse-ecg canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.human-pulse-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--grid);
+  font-size: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.human-pulse-entity {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #FF3B3B;
+}
+
+.human-pulse-note {
+  font-weight: 300;
+  font-style: italic;
+}
+
 /* ===== TOMBSTONE SECTION ===== */
 #tombstone {
   display: none;
@@ -1792,6 +1914,27 @@ body.resurrecting {
       </div>
     </div>
 
+    <!-- Human Pulse (Live Apple Watch) -->
+    <div class="sidebar-panel human-pulse-panel" id="humanPulsePanel">
+      <div class="human-pulse-header">
+        <div class="sidebar-panel-title" style="margin-bottom:0">HUMAN PULSE</div>
+        <div class="human-pulse-dot" id="humanPulseDot"></div>
+        <span class="human-pulse-status waiting" id="humanPulseStatus">WAITING</span>
+      </div>
+      <div class="human-pulse-bpm-row">
+        <div class="human-pulse-bpm" id="humanBpmValue">--</div>
+        <div class="human-pulse-unit">BPM</div>
+      </div>
+      <div class="human-pulse-source" id="humanPulseSource">Awaiting Apple Watch data...</div>
+      <div class="human-pulse-ecg">
+        <canvas id="humanEcgCanvas"></canvas>
+      </div>
+      <div class="human-pulse-meta">
+        <span class="human-pulse-entity">CHRISTOPHER CELAYA</span>
+        <span class="human-pulse-note">pacemaker patient</span>
+      </div>
+    </div>
+
     <!-- Block Height Lifecycle -->
     <div class="sidebar-panel" id="blockPanel">
       <div class="sidebar-panel-title">DETERMINISTIC MORTALITY</div>
@@ -2646,6 +2789,8 @@ async function loadStatus() {
     if (d.deathBlock) S.deathBlock = d.deathBlock;
     if (d.currentBlock) S.currentBlock = d.currentBlock;
     if (d.percentComplete != null) S.blockPct = d.percentComplete;
+    // Human heartbeat from status
+    if (d.humanHeartbeat) updateHumanPulse(d.humanHeartbeat);
     updateUI();
   } catch(e) { console.warn('Status fetch failed:', e); }
 }
@@ -2820,6 +2965,9 @@ function connectWS() {
       if (d.type === 'resurrection') {
         stopVaultPolling();
         triggerResurrection(d);
+      }
+      if (d.type === 'human_heartbeat') {
+        updateHumanPulse(d);
       }
       if (d.type === 'vault_update') {
         const panel = $('vaultFundPanel');
@@ -3022,9 +3170,160 @@ $('musicToggle').addEventListener('click', () => {
   $('musicToggle').classList.toggle('active', S.musicOn);
 });
 
+// ============ HUMAN PULSE ============
+let humanBpm = null;
+let humanBpmHistory = [];
+let humanEcgPhase = 0;
+let humanEcgCanvas = null;
+let humanEcgCtx = null;
+let humanBeatInterval = null;
+
+function initHumanEcg() {
+  humanEcgCanvas = $('humanEcgCanvas');
+  if (!humanEcgCanvas) return;
+  humanEcgCtx = humanEcgCanvas.getContext('2d');
+  const rect = humanEcgCanvas.parentElement.getBoundingClientRect();
+  humanEcgCanvas.width = rect.width * 2;
+  humanEcgCanvas.height = rect.height * 2;
+  humanEcgCanvas.style.width = rect.width + 'px';
+  humanEcgCanvas.style.height = rect.height + 'px';
+  renderHumanEcg();
+}
+
+function renderHumanEcg() {
+  if (!humanEcgCtx) return;
+  const w = humanEcgCanvas.width;
+  const h = humanEcgCanvas.height;
+  const mid = h / 2;
+
+  humanEcgCtx.clearRect(0, 0, w, h);
+
+  // Draw baseline
+  humanEcgCtx.strokeStyle = 'rgba(255,59,59,0.15)';
+  humanEcgCtx.lineWidth = 1;
+  humanEcgCtx.beginPath();
+  humanEcgCtx.moveTo(0, mid);
+  humanEcgCtx.lineTo(w, mid);
+  humanEcgCtx.stroke();
+
+  if (!humanBpm || humanBpm <= 0) {
+    // Flatline
+    humanEcgCtx.strokeStyle = 'rgba(255,59,59,0.3)';
+    humanEcgCtx.lineWidth = 2;
+    humanEcgCtx.beginPath();
+    humanEcgCtx.moveTo(0, mid);
+    humanEcgCtx.lineTo(w, mid);
+    humanEcgCtx.stroke();
+    requestAnimationFrame(renderHumanEcg);
+    return;
+  }
+
+  // Draw ECG waveform
+  humanEcgPhase += 0.03;
+  const beatsPerPixel = (humanBpm / 60) / (w / 2);
+  humanEcgCtx.strokeStyle = '#FF3B3B';
+  humanEcgCtx.lineWidth = 2;
+  humanEcgCtx.shadowColor = 'rgba(255,59,59,0.5)';
+  humanEcgCtx.shadowBlur = 4;
+  humanEcgCtx.beginPath();
+
+  for (let x = 0; x < w; x++) {
+    const t = (x / w) * 4 * Math.PI + humanEcgPhase;
+    const cycle = t % (Math.PI * 2);
+    let y = mid;
+
+    // QRS complex simulation
+    if (cycle < 0.3) {
+      y = mid; // baseline
+    } else if (cycle < 0.5) {
+      y = mid + (h * 0.1); // P wave
+    } else if (cycle < 0.7) {
+      y = mid; // baseline
+    } else if (cycle < 0.8) {
+      y = mid + (h * 0.08); // Q
+    } else if (cycle < 1.0) {
+      y = mid - (h * 0.35); // R peak
+    } else if (cycle < 1.2) {
+      y = mid + (h * 0.12); // S
+    } else if (cycle < 1.5) {
+      y = mid; // baseline
+    } else if (cycle < 1.9) {
+      y = mid - (h * 0.08); // T wave
+    } else {
+      y = mid;
+    }
+
+    if (x === 0) humanEcgCtx.moveTo(x, y);
+    else humanEcgCtx.lineTo(x, y);
+  }
+
+  humanEcgCtx.stroke();
+  humanEcgCtx.shadowBlur = 0;
+
+  requestAnimationFrame(renderHumanEcg);
+}
+
+function updateHumanPulse(data) {
+  if (!data || !data.bpm) return;
+
+  const prevBpm = humanBpm;
+  humanBpm = data.bpm;
+
+  // Update BPM display
+  const bpmEl = $('humanBpmValue');
+  bpmEl.textContent = humanBpm;
+  bpmEl.classList.add('beat');
+  setTimeout(() => bpmEl.classList.remove('beat'), 150);
+
+  // Update status dot
+  const dot = $('humanPulseDot');
+  const statusEl = $('humanPulseStatus');
+  const st = data.status || 'live';
+
+  if (st === 'live_apple_watch' || st === 'live') {
+    dot.classList.add('live');
+    statusEl.className = 'human-pulse-status live';
+    statusEl.textContent = 'LIVE';
+  } else if (st === 'stale_apple_watch' || st === 'stale') {
+    dot.classList.remove('live');
+    statusEl.className = 'human-pulse-status stale';
+    statusEl.textContent = 'STALE (' + (data.staleSeconds || '?') + 's)';
+  } else if (st === 'waiting') {
+    dot.classList.remove('live');
+    statusEl.className = 'human-pulse-status waiting';
+    statusEl.textContent = 'WAITING';
+  } else {
+    dot.classList.add('live');
+    statusEl.className = 'human-pulse-status live';
+    statusEl.textContent = 'LIVE';
+  }
+
+  // Update source
+  $('humanPulseSource').textContent = data.source || "Christopher's Apple Watch";
+
+  // Sync pulse animation speed to actual BPM
+  if (humanBpm !== prevBpm && humanBpm > 0) {
+    const beatMs = Math.round(60000 / humanBpm);
+    dot.style.animationDuration = beatMs + 'ms';
+  }
+}
+
+async function loadHumanHeartbeat() {
+  try {
+    const d = await fetchJSON('/human-heartbeat');
+    if (d && d.bpm) updateHumanPulse(d);
+  } catch(e) {
+    // Not available
+    $('humanPulseStatus').className = 'human-pulse-status offline';
+    $('humanPulseStatus').textContent = 'OFFLINE';
+  }
+}
+
 // ============ INIT ============
 async function init() {
-  await Promise.allSettled([loadStatus(), loadJournal(), loadVault()]);
+  await Promise.allSettled([loadStatus(), loadJournal(), loadVault(), loadHumanHeartbeat()]);
+
+  initHumanEcg();
 
   $('beepToggle').classList.toggle('active', S.beepOn);
   $('musicToggle').classList.toggle('active', S.musicOn);
@@ -3074,6 +3373,7 @@ async function init() {
   setInterval(() => { loadStatus(); loadJournal(); }, 30000);
   setInterval(loadVault, 60000);
   setInterval(loadLetters, 60000);
+  setInterval(loadHumanHeartbeat, 10000); // Poll human heartbeat every 10s
   loadLetters();
 }
 

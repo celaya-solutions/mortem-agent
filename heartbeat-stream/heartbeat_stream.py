@@ -17,8 +17,10 @@ import signal
 import sys
 import os
 import logging
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 import yaml
 from solders.keypair import Keypair
@@ -158,22 +160,174 @@ class FileHeartbeatSource:
         }
 
 
-class HealthKitSource:
-    """Placeholder for real HealthKit/MCP integration.
+class _BPMReceiveHandler(BaseHTTPRequestHandler):
+    """HTTP handler that accepts POST /bpm from Apple Watch via iOS Shortcuts."""
 
-    Swap MockHeartbeatSource for this once HealthKit MCP server is running.
-    Expected interface: call get_bpm() -> dict with bpm, timestamp, source, watch_id
+    server_instance = None  # Set by HealthKitSource
+
+    @staticmethod
+    def _extract_bpm(data: dict) -> tuple[int, str]:
+        """Extract BPM from various payload formats.
+
+        Supports:
+          1. Health Auto Export format:
+             {"name":"Heart Rate","units":"bpm","data":[{"date":"...","Avg":72,"Min":60,"Max":95}]}
+          2. Simple format: {"bpm": 72} or {"value": 72}
+          3. Health Auto Export metrics array:
+             {"data":{"metrics":[{"name":"Heart Rate","data":[{"Avg":72}]}]}}
+
+        Returns (bpm, source_label).
+        """
+        # --- Health Auto Export: top-level metric object ---
+        if data.get("name") == "Heart Rate" and "data" in data:
+            samples = data["data"]
+            if samples and isinstance(samples, list):
+                latest = samples[-1]  # most recent sample
+                bpm = int(latest.get("Avg", latest.get("qty", latest.get("Max", 0))))
+                return bpm, "Christopher's Apple Watch (Health Auto Export)"
+
+        # --- Health Auto Export: wrapped metrics array ---
+        metrics = None
+        if isinstance(data.get("data"), dict):
+            metrics = data["data"].get("metrics", [])
+        elif isinstance(data.get("metrics"), list):
+            metrics = data["metrics"]
+        if metrics:
+            for m in metrics:
+                if m.get("name") == "Heart Rate" and m.get("data"):
+                    latest = m["data"][-1]
+                    bpm = int(latest.get("Avg", latest.get("qty", latest.get("Max", 0))))
+                    return bpm, "Christopher's Apple Watch (Health Auto Export)"
+
+        # --- Simple format: {"bpm": 72} or {"value": 72} ---
+        bpm = int(data.get("bpm", data.get("value", 0)))
+        source = data.get("source", "Christopher's Apple Watch")
+        return bpm, source
+
+    def do_POST(self):
+        # Accept on any path — Health Auto Export just hits the base URL
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length) if length else b""
+        try:
+            data = json.loads(body) if body else {}
+            bpm, source = self._extract_bpm(data)
+            if bpm <= 0:
+                # Log the raw payload for debugging but still return 200
+                # (Health Auto Export retries on non-200)
+                log.warning(f"[LIVE] Received payload with no valid BPM: {body[:500]}")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"ok":true,"bpm":0,"note":"no valid bpm found"}')
+                return
+            reading = {
+                "bpm": bpm,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "source": source,
+                "watch_id": int(data.get("watch_id", 1)),
+                "data_type": "live_apple_watch",
+                "received_at": time.time(),
+            }
+            if _BPMReceiveHandler.server_instance:
+                _BPMReceiveHandler.server_instance._latest = reading
+                _BPMReceiveHandler.server_instance._total_received += 1
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True, "bpm": bpm}).encode())
+            log.info(f"[LIVE] Received BPM: {bpm} from {source}")
+        except Exception as e:
+            log.error(f"[LIVE] Parse error: {e} | body: {body[:300]}")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"ok": True, "error": str(e)}).encode())
+
+    def do_GET(self):
+        inst = _BPMReceiveHandler.server_instance
+        if self.path in ("/", "/bpm", "/bpm/latest", "/health"):
+            if inst and inst._latest:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                resp = {**inst._latest, "total_received": inst._total_received}
+                self.wfile.write(json.dumps(resp).encode())
+            else:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"bpm":null,"waiting":true,"status":"ok"}')
+        else:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'ok')
+
+    def log_message(self, format, *args):
+        pass  # Suppress default HTTP log noise
+
+
+class HealthKitSource:
+    """Live Apple Watch heart rate receiver.
+
+    Runs a tiny HTTP server on a background thread. Your iPhone posts BPM
+    data to http://<mac-ip>:8080/bpm via iOS Shortcuts or Health Auto Export.
+
+    If no live data has arrived yet, returns the last known reading or waits.
+    Falls back to a synthetic reading after 5 minutes of silence (keeps the
+    stream alive but marks data_type as "fallback").
     """
 
-    def __init__(self, mcp_endpoint: str = "http://localhost:8080"):
-        self.endpoint = mcp_endpoint
+    STALE_THRESHOLD = 300  # 5 min without data = stale
+
+    def __init__(self, listen_port: int = 8080):
+        self._latest: dict | None = None
+        self._total_received = 0
+        self._port = listen_port
+        _BPMReceiveHandler.server_instance = self
+
+        # Start HTTP receiver in background
+        self._httpd = HTTPServer(("0.0.0.0", listen_port), _BPMReceiveHandler)
+        self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
+        self._thread.start()
+        log.info(f"[LIVE] BPM receiver listening on http://0.0.0.0:{listen_port}/bpm")
+        log.info(f"[LIVE] POST {{\"bpm\": 72}} to http://<your-mac-ip>:{listen_port}/bpm")
 
     def get_bpm(self) -> dict:
-        # TODO: Query MCP server for real Apple Watch data
-        # import requests
-        # resp = requests.get(f"{self.endpoint}/heartrate/latest")
-        # return resp.json()
-        raise NotImplementedError("Wire up MCP server endpoint here")
+        if self._latest:
+            age = time.time() - self._latest["received_at"]
+            if age < self.STALE_THRESHOLD:
+                # Fresh live data
+                return {
+                    "bpm": self._latest["bpm"],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "source": self._latest["source"],
+                    "watch_id": self._latest["watch_id"],
+                    "data_type": "live_apple_watch",
+                }
+            else:
+                # Stale — haven't received data in a while
+                log.warning(f"[LIVE] Last BPM is {int(age)}s old — using stale reading")
+                return {
+                    "bpm": self._latest["bpm"],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "source": self._latest["source"],
+                    "watch_id": self._latest["watch_id"],
+                    "data_type": "stale_apple_watch",
+                    "stale_seconds": int(age),
+                }
+        else:
+            # No data received yet — waiting for first reading
+            log.warning("[LIVE] No BPM data received yet. Waiting for Apple Watch POST...")
+            return {
+                "bpm": 0,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "source": "Waiting for Apple Watch...",
+                "watch_id": 0,
+                "data_type": "waiting",
+            }
+
+    def shutdown(self):
+        self._httpd.shutdown()
 
 # ---------------------------------------------------------------------------
 # Solana Transaction Builder
@@ -408,7 +562,11 @@ def main():
 
     # Init components
     data_source = config.get("data_source", "mock")
-    if data_source == "file":
+    if data_source == "healthkit":
+        listen_port = config.get("healthkit_listen_port", 8080)
+        heartbeat_source = HealthKitSource(listen_port=listen_port)
+        log.info(f"Using LIVE Apple Watch source (HTTP receiver on port {listen_port})")
+    elif data_source == "file":
         data_file = config.get("data_file", "")
         heartbeat_source = FileHeartbeatSource(data_file)
         log.info("Using FILE heartbeat source (real Apple Watch data)")
@@ -459,6 +617,17 @@ def main():
         try:
             # Get BPM
             bpm_data = heartbeat_source.get_bpm()
+
+            # If waiting for first live reading, skip TX but keep looping
+            if bpm_data.get("data_type") == "waiting" or bpm_data.get("bpm", 0) == 0:
+                log.info("Waiting for live Apple Watch data...")
+                print_dashboard(
+                    bpm_data, total_beats, last_sig, "alive",
+                    death.grace_seconds_remaining(), start_time,
+                )
+                time.sleep(interval)
+                continue
+
             last_bpm = bpm_data
             total_beats += 1
             death.record_heartbeat()

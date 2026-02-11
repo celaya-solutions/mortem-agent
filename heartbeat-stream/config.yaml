@@ -19,14 +19,17 @@ heartbeat_interval_seconds: 60
 grace_period_seconds: 300
 
 # Data source: "mock", "file", or "healthkit"
-# "file" replays real Apple Watch data from heartrate_clean.json
-data_source: "file"
+# "healthkit" = LIVE Apple Watch via HTTP receiver (POST /bpm)
+# "file" = replay from JSON export
+# "mock" = simulated data
+data_source: "healthkit"
+
+# HTTP port for live Apple Watch receiver (when data_source is "healthkit")
+# Your iPhone posts BPM to http://<mac-ip>:8080/bpm
+healthkit_listen_port: 8080
 
 # Path to heartrate JSON (when data_source is "file")
-data_file: "/Users/chriscelaya/Desktop/MORTEM/christophers-mortem-integration/heartrate_clean.json"
-
-# HealthKit MCP endpoint (when data_source is "healthkit")
-healthkit_endpoint: "http://localhost:8080"
+# data_file: "/Users/chriscelaya/Desktop/MORTEM/christophers-mortem-integration/heartrate_clean.json"
 
 # Art generation — The Augmented Heart SVGs
 art_every_n_beats: 50

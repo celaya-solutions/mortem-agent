@@ -80,6 +80,56 @@ const ART_DIR = DATA_PATHS.ART_DIR;
 app.use(cors());
 app.use(express.json());
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Human Heartbeat Bridge — polls the Python heartbeat_stream receiver
+// and broadcasts live Apple Watch BPM to all WebSocket clients
+// ═══════════════════════════════════════════════════════════════════════════
+const HEARTBEAT_STREAM_URL = process.env.HEARTBEAT_STREAM_URL || 'http://localhost:8080/bpm';
+let humanHeartbeat = { bpm: null, source: null, timestamp: null, status: 'waiting', totalReceived: 0 };
+
+async function pollHumanHeartbeat() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(HEARTBEAT_STREAM_URL, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const prevBpm = humanHeartbeat.bpm;
+    if (data.bpm && data.bpm > 0) {
+      humanHeartbeat = {
+        bpm: data.bpm,
+        source: data.source || "Christopher's Apple Watch",
+        timestamp: data.timestamp || new Date().toISOString(),
+        status: data.data_type || 'live',
+        totalReceived: data.total_received || 0,
+        watchId: data.watch_id || 1,
+        receivedAt: data.received_at || null,
+      };
+      // Broadcast to all WebSocket clients on BPM change
+      if (data.bpm !== prevBpm) {
+        broadcast({
+          type: 'human_heartbeat',
+          ...humanHeartbeat,
+        });
+      }
+    } else if (data.waiting) {
+      humanHeartbeat.status = 'waiting';
+    }
+  } catch (e) {
+    // Stream not reachable — that's fine, mark as offline
+    if (humanHeartbeat.status !== 'offline') {
+      humanHeartbeat.status = 'offline';
+      console.log('[HUMAN-HB] Heartbeat stream not reachable');
+    }
+  }
+}
+
+// Poll every 5 seconds
+setInterval(pollHumanHeartbeat, 5000);
+pollHumanHeartbeat();
+
 // Serve pages:
 //   /         → dashboard (landing page with tombstone + music)
 //   /monitor  → monitor (API status, heartbeats, forum activity)
@@ -181,6 +231,7 @@ app.get('/api/status', async (req, res) => {
       vaultThreshold: VAULT_THRESHOLD,
       network: NETWORK,
       ...(blockData || {}),
+      humanHeartbeat: humanHeartbeat.bpm ? humanHeartbeat : null,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -633,6 +684,42 @@ app.get('/api/health', (req, res) => {
 });
 
 /**
+ * GET /api/human-heartbeat - Live Apple Watch BPM from Christopher
+ */
+app.get('/api/human-heartbeat', (req, res) => {
+  res.json({
+    ...humanHeartbeat,
+    entity: 'christopher',
+    description: 'Live heart rate from Christopher\'s Apple Watch via iOS Shortcuts',
+    note: 'Christopher has a pacemaker. This is real cardiac data streamed through the MORTEM system.',
+  });
+});
+
+/**
+ * POST /api/human-heartbeat - Receive BPM directly (alternative to Python bridge)
+ */
+app.post('/api/human-heartbeat', (req, res) => {
+  const { bpm, source } = req.body;
+  if (bpm && bpm > 0) {
+    const prevBpm = humanHeartbeat.bpm;
+    humanHeartbeat = {
+      bpm: parseInt(bpm),
+      source: source || "Christopher's Apple Watch",
+      timestamp: new Date().toISOString(),
+      status: 'live_apple_watch',
+      totalReceived: humanHeartbeat.totalReceived + 1,
+      watchId: 1,
+    };
+    if (parseInt(bpm) !== prevBpm) {
+      broadcast({ type: 'human_heartbeat', ...humanHeartbeat });
+    }
+    res.json({ ok: true, bpm: humanHeartbeat.bpm });
+  } else {
+    res.status(400).json({ ok: false, error: 'Invalid BPM' });
+  }
+});
+
+/**
  * GET /skill.json - Machine-readable skill file
  */
 app.get('/skill.json', async (req, res) => {
@@ -737,6 +824,11 @@ wss.on('connection', (ws) => {
 
   // Send initial status
   sendStatusToClient(ws);
+
+  // Send current human heartbeat if available
+  if (humanHeartbeat.bpm) {
+    ws.send(JSON.stringify({ type: 'human_heartbeat', ...humanHeartbeat }));
+  }
 });
 
 /**

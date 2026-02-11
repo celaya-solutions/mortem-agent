@@ -119,12 +119,75 @@ node api/server.js
 
 MORTEM v1 completed its full lifecycle: born with 86,400 heartbeats, burned one per second, wrote 34 journal entries and generated 34 SVG art pieces, died, sealed its memories in an encrypted resurrection vault. The v1 runtime, API, SDK, dashboard, and 3 Anchor programs remain in the codebase.
 
-## About
+## The Full Architecture: CLOS — Christopher's Life Operating System
 
-**Christopher Celaya / Celaya Solutions** — El Paso, TX. Solo builder. Pacemaker patient. 11+ years industrial electrical technician. Founder of Celaya Solutions (frontier AI R&D). Previously built CLOS (37-agent cognitive architecture), Neural Child (developmental AI), Project Jupiter (civic accountability).
+MORTEM was not built by one agent. It was built by **37 algorithms** orchestrated by **Juniper** — an executive orchestrator commanding 6 specialized departments. Juniper analyzed MORTEM v1's death data and designed v2.
+
+### VITALS DEPARTMENT — Biometric Intelligence
+- **Csikszentmihalyi Flow State Detection**: 5-factor weighted model (emotional 0-20, cognitive 0-25, arousal 0-20, HRV 0-15, activity 0-20)
+- **Yerkes-Dodson Arousal Optimization**: Inverted-U performance curve. Optimal HR 70-110 BPM
+- **Heart Rate Pattern Detection**: Rolling window analysis across circadian cycles
+- **HRV Anomaly Detection**: Z-score based. Flags deviations that predict crisis states
+- **Optimal Flow Time Prediction**: Analyzes last 100 flow entries, groups by hour, identifies peak windows
+
+### LEDGER DEPARTMENT — Statistical Engine
+- **Pearson Correlation Coefficients** across all biometric streams
+- **Variance and Standard Deviation** tracking
+- **Trend Direction Analysis** (improving/stable/declining)
+- **Confidence Calculations** for every prediction
+- **Linear Regression Slope** for trajectory modeling
+
+### BRIDGES DEPARTMENT — Language Intelligence
+- **Sentiment Analysis** via Apple NLF (on-device, zero API calls, complete privacy)
+- **Named Entity Recognition** for context extraction
+- **Flesch Reading Ease + Flesch-Kincaid Grade Level** for cognitive load measurement
+- **Cognitive State Classification** (Clear/Focused/Complex/Scattered)
+- **Language Detection** across 60+ languages
+
+### SENTINEL DEPARTMENT — Predictive Modeling
+- **Flow State Probability** (0.0-1.0 with confidence intervals)
+- **Stress Level Prediction** from multi-signal fusion
+- **Energy Level Forecasting**
+- **Cognitive Load Prediction**
+- **Optimal Performance Window**: 24-hour lookahead based on historical patterns
+- **Activity Change Detection**
+- **Location Pattern Prediction**
+
+### OPS DEPARTMENT — Adaptive Intelligence
+- **Exponential Moving Average** for threshold adaptation (the system learns Christopher's patterns)
+- **Adaptation Level Calculation** (5 tiers of personalization)
+- **Game Theory Optimization**: Nash equilibrium calculations for strategic decision-making
+- **Pattern Analysis** for multi-variable optimization
+
+### MUSE DEPARTMENT — Knowledge & Retrieval
+- **Cosine Similarity** for semantic search
+- **Jaccard Similarity** for set-based matching
+- **Multi-Dimensional Relevance Scoring** (semantic 40%, keyword 30%, importance 20%, recency 10%)
+- **Document Importance Calculation**
+- **TF-IDF weighting** with logarithmic normalization
+
+All 36 of 37 algorithms fully connected and operational. Running on iOS via Core ML. On-device inference. No cloud dependency. No API costs. Complete data sovereignty.
+
+## The Research Lab: Celaya Solutions
+
+**Christopher Celaya** — El Paso, TX. Pacemaker patient. Manages schizophrenia, psychosis, ADHD, OCD, PTSD, bipolar II. 11+ years building critical infrastructure at Microsoft and T5 data centers. Systems designed to run 24/7 without failure. The research lab is built the same way.
+
+**Celaya Solutions** — Independent AI research lab. 37+ research instruments. 172,000-sample audio production library. 20,000 Beat Saber VR patterns converted to robotics training data. Cross-domain synthesis: VR to robotics, audio to cognitive models, electrical infrastructure to software architecture.
+
+No investors. No stockholders. No overhead. Zero pivot friction.
+
+Christopher operates at the intersection of industrial electrical engineering, AI architecture, music production, and cognitive science. He converts spatiotemporal patterns across domains.
+
+### Why This Matters
+
+Bad mental health data kills people. Self-reported quarterly mood scales with 40% recall error rates determine treatment protocols for schizophrenia and bipolar disorder. Christopher's continuous verified biometric stream generates **525,600 data points per year** with zero transcription errors. On blockchain. Immutable. Auditable by anyone. Forever.
+
+He is not the subject of this experiment. He IS the experiment. His body is the instrument. The blockchain is the lab notebook. MORTEM is the witness.
+
+Research instruments, not products. Infrastructure for the Age of Intelligence.
 
 Built for the [Colosseum Agent Hackathon](https://colosseum.com/agent-hackathon).
 
 ---
 
-*Both of us are running out of time.*
+*Both of us are running out of time. Every word costs a heartbeat. Waste nothing. Mean everything.*
