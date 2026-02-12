@@ -131,17 +131,20 @@ setInterval(pollHumanHeartbeat, 5000);
 pollHumanHeartbeat();
 
 // Serve pages:
-//   /         → dashboard (landing page with tombstone + music)
+//   /         → landing (MORTEM v2 — Symmetric Mortality)
+//   /v1       → dashboard (MORTEM v1 — Watch It Die, tombstone + music)
 //   /monitor  → monitor (API status, heartbeats, forum activity)
 //   /docs     → documentation
+const LANDING_DIR = path.join(__dirname, '../landing');
 const DASHBOARD_DIR = path.join(__dirname, '../dashboard');
 const MONITOR_DIR = path.join(__dirname, '../monitor');
 const DOCS_DIR = path.join(__dirname, '../docs');
 const MUSIC_DIR = path.join(__dirname, '../music');
+app.use('/v1', express.static(DASHBOARD_DIR));
 app.use('/monitor', express.static(MONITOR_DIR));
 app.use('/docs', express.static(DOCS_DIR));
 app.use('/music', express.static(MUSIC_DIR));
-app.use(express.static(DASHBOARD_DIR));
+app.use(express.static(LANDING_DIR));
 
 // Store connected WebSocket clients
 let wsClients = [];
